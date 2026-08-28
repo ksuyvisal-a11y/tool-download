@@ -1,20 +1,18 @@
 {
-  "version": "7.0.1",
-  "title": "SKD TOOL v7.0.1 (Platform Fixes & Universal License Auto-Sync)",
-  "release_date": "27 Aug 2026",
+  "version": "7.0.2",
+  "title": "SKD TOOL v7.0.2 (Modern UI & Smart AI Quality Edition)",
+  "release_date": "28 Aug 2026",
   "mandatory": false,
   "changelog": [
-    "⚡ Fixed YouTube, TikTok, Facebook, Instagram & X Stream Downloading",
-    "🔑 Universal Multi-Location License Auto-Sync (Never loses license on updates)",
-    "🚀 Seamless In-Place Binary Swapping on Auto-Update Restart",
-    "🇰🇭 Full Dual-Language Support: Instant 1-Click Switcher between ភាសាខ្មែរ and English",
-    "🎬 Built-in In-App Media Player: Direct video and audio preview with Cyber Audio Visualizer",
-    "🎞️ Video to GIF Maker: High-fidelity animated meme/GIF creator with Lanczos & Palettegen",
-    "🔊 Audio Volume Booster: Amplify low audio levels by 150%, 200%, or 300% (+9.5 dB)",
-    "📸 TikTok Photo Carousel Downloader: Auto-save all slide images into dedicated folder + MP3 audio",
-    "🖼️ HD Cover & Thumbnail Downloader: 1-Click MaxRes cover extractor from any video platform"
+    "🎨 Modernized Recent Downloads: Sleek row layout with in-app Play, Folder, and More dropdown",
+    "ℹ️ New File Details Modal: Inspect exact format, size, local path, and URL with instant Copy",
+    "🤖 Smart Quality (Auto AI): Automatically selects and downloads the highest available resolution",
+    "✨ 1080p Full HD (SKD AI Recommended): Elevated default profile with crystal-clear 60fps streaming",
+    "⚡ Spacious Centered Input: Ergonomic layout with inline Paste/Clear and prominent Download action",
+    "🧹 Clean & Minimalist Top Bar: Focused workspace with Language & Folder shortcuts",
+    "👑 Universal Lifetime VIP: Permanently unlocked for all users worldwide with zero license prompts"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/v7.0.1/SKD_TOOL.exe",
-  "sha256": "09c93e60195e34fbb8eb7c47f5e6cc229303103aa673fe0ae698e94f06bf43fc",
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/v7.0.2/SKD_TOOL.exe",
+  "sha256": "8d4290636bb2e73e0eb927974c29014fbb7e2847e5c918b29533183fba5b7dcd",
   "file_size": "106 MB"
 }
