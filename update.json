@@ -1,18 +1,18 @@
 {
-  "version": "7.0.2",
-  "title": "SKD TOOL v7.0.2 (Modern UI & Smart AI Quality Edition)",
-  "release_date": "28 Aug 2026",
+  "version": "1.0.4",
+  "title": "SKD TOOL v1.0.4 (Pinterest Video & Smart AI Edition)",
+  "release_date": "31 Aug 2026",
   "mandatory": false,
   "changelog": [
-    "🎨 Modernized Recent Downloads: Sleek row layout with in-app Play, Folder, and More dropdown",
+    "📌 100% Pinterest Support: Full video & MP3 download for pin.it and pinterest.com",
+    "⚡ Resilient Auto-Updater: Zero-cache sync, download ETA & live MB speed",
+    "🎨 Modernized Recent Downloads: Sleek row layout with in-app Play and Folder shortcuts",
     "ℹ️ New File Details Modal: Inspect exact format, size, local path, and URL with instant Copy",
     "🤖 Smart Quality (Auto AI): Automatically selects and downloads the highest available resolution",
-    "✨ 1080p Full HD (SKD AI Recommended): Elevated default profile with crystal-clear 60fps streaming",
-    "⚡ Spacious Centered Input: Ergonomic layout with inline Paste/Clear and prominent Download action",
-    "🧹 Clean & Minimalist Top Bar: Focused workspace with Language & Folder shortcuts",
-    "👑 Universal Lifetime VIP: Permanently unlocked for all users worldwide with zero license prompts"
+    "✨ 1080p Full HD: Elevated default profile with crystal-clear 60fps streaming",
+    "👑 Universal Lifetime VIP: Permanently unlocked for all users worldwide"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/v7.0.2/SKD_TOOL.exe",
-  "sha256": "8d4290636bb2e73e0eb927974c29014fbb7e2847e5c918b29533183fba5b7dcd",
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.4/SKD_TOOL.exe",
+  "sha256": "e470bdd54e0bbe1493575e53b6791089f3588e37588cbb3a3337dc03b8a6f4fa",
   "file_size": "106 MB"
 }
