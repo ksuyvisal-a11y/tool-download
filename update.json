@@ -1,18 +1,17 @@
 {
-  "version": "1.0.4",
-  "title": "SKD TOOL v1.0.4 (Pinterest Video & Smart AI Edition)",
-  "release_date": "31 Aug 2026",
+  "version": "1.0.6",
+  "title": "SKD TOOL v1.0.6 (Ultimate Universal Downloader & Stability Edition)",
+  "release_date": "01 Sep 2026",
   "mandatory": false,
   "changelog": [
-    "📌 100% Pinterest Support: Full video & MP3 download for pin.it and pinterest.com",
-    "⚡ Resilient Auto-Updater: Zero-cache sync, download ETA & live MB speed",
-    "🎨 Modernized Recent Downloads: Sleek row layout with in-app Play and Folder shortcuts",
-    "ℹ️ New File Details Modal: Inspect exact format, size, local path, and URL with instant Copy",
-    "🤖 Smart Quality (Auto AI): Automatically selects and downloads the highest available resolution",
-    "✨ 1080p Full HD: Elevated default profile with crystal-clear 60fps streaming",
-    "👑 Universal Lifetime VIP: Permanently unlocked for all users worldwide"
+    "🚀 Universal Platform Engine Upgraded: YouTube 4K, TikTok No-Watermark (3-Tier API Resolver), Facebook, Instagram, Twitter/X, Douyin, and Direct .MP4/.MP3 file downloads",
+    "⚡ Direct Media Fast-Path: Instant analysis and multi-chunk parallel download for raw media file URLs with SSL verification bypass",
+    "🛡️ 100% Crash-Proof IPC Engine: Eliminated sudden app exits and memory deadlocks during high-speed downloads",
+    "📐 Ergonomic Recent Downloads Layout: Expanded card to bottom edge with smart upward 3-dots dropdown menus",
+    "🔊 Authentic Windows System Sound: Native Windows notification alert upon download completion (English voice removed)",
+    "🔒 Enhanced Code Armor Shield: Full in-memory decryption and reverse-engineering protection"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.4/SKD_TOOL.exe",
-  "sha256": "e470bdd54e0bbe1493575e53b6791089f3588e37588cbb3a3337dc03b8a6f4fa",
-  "file_size": "106 MB"
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.6/SKD_TOOL.exe",
+  "sha256": "0aeb69c661e2753b91cb7ad0136cef48d664b58c35e8b07bb39c220c636c3de5",
+  "file_size": "106.6 MB"
 }
