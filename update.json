@@ -1,14 +1,14 @@
 {
-  "version": "1.0.7",
-  "title": "SKD TOOL v1.0.7 (Ultimate Universal Downloader & Drama Edition)",
+  "version": "1.0.8",
+  "title": "SKD TOOL v1.0.8 (Ultimate Universal Downloader & Turbo Studio)",
   "release_date": "02 Sep 2026",
   "mandatory": false,
   "changelog": [
-    "🚀 Universal Platform Engine Upgraded: គាំទ្រការ Download ពី Website រឿងចិន និង M3U8 Streams",
-    "⚡ Direct Media Fast-Path: បន្ថែមល្បឿន Multi-chunk 32-Stream Parallel",
-    "🛡️ 100% Crash-Proof IPC Engine: កែកំហុសទូទៅ និងពង្រឹងស្ថេរភាពកម្មវិធី ព្រមទាំង Seamless Auto-Restart"
+    "🚀 Universal Platform Engine: គាំទ្រការ Download ពី Website រឿងចិន, វិបសាយរឿងភាគ និង M3U8 Streams គ្រប់ទម្រង់",
+    "⚡ Seamless 1-Click Auto-Restart: បង្កើនល្បឿន និងភាពរលូននៃការ Update កម្មវិធីដោយស្វ័យប្រវត្តិ",
+    "🛡️ 100% Multi-Process Process-Tree Shield: ដោះស្រាយបញ្ហា Process Lock និងពង្រឹងស្ថេរភាពខ្ពស់"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.7/SKD_TOOL.exe",
-  "sha256": "77b0eee2e8fa8cf585ab7bef2671551d991eefddf74b7544319d1bb22cda8f16",
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.8/SKD_TOOL.exe",
+  "sha256": "",
   "file_size": "106.6 MB"
 }
