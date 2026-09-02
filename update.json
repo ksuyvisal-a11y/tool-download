@@ -1,17 +1,14 @@
 {
-  "version": "1.0.6",
-  "title": "SKD TOOL v1.0.6 (Ultimate Universal Downloader & Stability Edition)",
-  "release_date": "01 Sep 2026",
+  "version": "1.0.7",
+  "title": "SKD TOOL v1.0.7 (Ultimate Universal Downloader & Drama Edition)",
+  "release_date": "02 Sep 2026",
   "mandatory": false,
   "changelog": [
-    "🚀 Universal Platform Engine Upgraded: YouTube 4K, TikTok No-Watermark (3-Tier API Resolver), Facebook, Instagram, Twitter/X, Douyin, and Direct .MP4/.MP3 file downloads",
-    "⚡ Direct Media Fast-Path: Instant analysis and multi-chunk parallel download for raw media file URLs with SSL verification bypass",
-    "🛡️ 100% Crash-Proof IPC Engine: Eliminated sudden app exits and memory deadlocks during high-speed downloads",
-    "📐 Ergonomic Recent Downloads Layout: Expanded card to bottom edge with smart upward 3-dots dropdown menus",
-    "🔊 Authentic Windows System Sound: Native Windows notification alert upon download completion (English voice removed)",
-    "🔒 Enhanced Code Armor Shield: Full in-memory decryption and reverse-engineering protection"
+    "🚀 Universal Platform Engine Upgraded: គាំទ្រការ Download ពី Website រឿងចិន និង M3U8 Streams",
+    "⚡ Direct Media Fast-Path: បន្ថែមល្បឿន Multi-chunk 32-Stream Parallel",
+    "🛡️ 100% Crash-Proof IPC Engine: កែកំហុសទូទៅ និងពង្រឹងស្ថេរភាពកម្មវិធី"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.6/SKD_TOOL.exe",
-  "sha256": "0aeb69c661e2753b91cb7ad0136cef48d664b58c35e8b07bb39c220c636c3de5",
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.7/SKD_TOOL.exe",
+  "sha256": "891fa4dc52bd57fd85e36d2808be7d9833fcacc84b176f5726c0203d2426b3d9",
   "file_size": "106.6 MB"
 }
