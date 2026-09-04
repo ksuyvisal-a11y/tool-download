@@ -1,14 +1,17 @@
 {
-  "version": "1.0.8",
-  "title": "SKD TOOL v1.0.8 (Ultimate Universal Downloader & Turbo Studio)",
-  "release_date": "02 Sep 2026",
+  "version": "1.0.9",
+  "title": "SKD TOOL v1.0.9 (Auto Best Resolution & Turbo Multi-Tier Downloader)",
+  "release_date": "04 Sep 2026",
   "mandatory": false,
   "changelog": [
-    "🚀 Universal Platform Engine: គាំទ្រការ Download ពី Website រឿងចិន, វិបសាយរឿងភាគ និង M3U8 Streams គ្រប់ទម្រង់",
-    "⚡ Seamless 1-Click Auto-Restart: បង្កើនល្បឿន និងភាពរលូននៃការ Update កម្មវិធីដោយស្វ័យប្រវត្តិ",
-    "🛡️ 100% Multi-Process Process-Tree Shield: ដោះស្រាយបញ្ហា Process Lock និងពង្រឹងស្ថេរភាពខ្ពស់"
+    "⭐ Auto Best Resolution: ស្វ័យប្រវត្តិចាប់យកកម្រិតច្បាស់បំផុត (4K UHD / 1080p 60fps) ភ្លាមៗពេល Paste Link",
+    "🎬 TikTok 1080p No-Watermark: ទាញយកកម្រិត HD Original ភ្លឺច្បាស់ 100% គ្មានជាប់ Logo",
+    "🛡️ Zero-Error Remux Shield: ប្រព័ន្ធ FFmpeg 7.1 Lossless Remux ធានាការ Merge File បានជោគជ័យឥតខ្ចោះ",
+    "🚀 Facebook & Instagram Ultra HD: ចាប់យក Stream កម្រិតច្បាស់ HD មុនគេជានិច្ច",
+    "⚡ Micro-Patch Turbo 2.2 MB: Update លឿនត្រឹម 0.2 វិនាទី មិនគាំងកុំព្យូទ័រ"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.8/SKD_TOOL.exe",
-  "sha256": "",
-  "file_size": "106.6 MB"
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.0.9/patch.zip",
+  "sha256": "0b6286338961c488194d40ae8ad4c8b1762095525e6a2e09604fd91bedc270f8",
+  "file_size": "2.23 MB",
+  "type": "patch"
 }
