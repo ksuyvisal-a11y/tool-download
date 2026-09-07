@@ -1,0 +1,43 @@
+# =========================================================================
+# SKD TOOL - GIT IGNORE CONFIGURATION
+# =========================================================================
+
+# 1. Critical Security & Private Keys (NEVER COMMIT!)
+*.pem
+admin_rsa_private.pem
+license.key
+*.key
+admin_key_history.json
+generated_keys_log.txt
+
+# 2. Python Build & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# 3. PyInstaller & Native Build Outputs
+dist/
+build/
+installer_output/
+*.spec.bak
+armored_app.py
+
+# 4. Media & Test Downloads
+test_dl/
+downloads/
+temp/
+*.tmp
+*.log
+
+# 5. IDE & OS Junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

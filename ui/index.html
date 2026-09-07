@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKD TOOL - Ultimate Media Downloader Studio</title>
+  
+  <!-- Google Fonts: Outfit, Inter & Kantumruy Pro for Khmer -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kantumruy+Pro:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+
+  <!-- ========================================================================= -->
+  <!-- 5-SECOND CINEMATIC INTRO SPLASH SCREEN                                    -->
+  <!-- ========================================================================= -->
+  <div class="splash-screen-overlay" id="splashScreen">
+    <div class="splash-content">
+      <div class="splash-logo-wrapper">
+        <div class="splash-sunburst-glow"></div>
+        <div class="splash-core-flare"></div>
+        <div class="splash-glow-halo"></div>
+        <div class="splash-glow-ring ring-1"></div>
+        <div class="splash-glow-ring ring-2"></div>
+        <div class="splash-glow-ring ring-3"></div>
+        <img src="assets/splash_logo.png" alt="SKD 3D Logo" class="splash-logo-img" onerror="this.src='../assets/splash_logo.png'">
+      </div>
+
+      <div class="splash-brand-group">
+        <h1 class="splash-title">
+          <span class="splash-text-white">SKD</span>
+          <span class="splash-text-cyan">TOOL</span>
+          <span class="splash-pro-badge">PRO VIP</span>
+        </h1>
+        <p class="splash-tagline">ULTRA-FAST MULTI-THREAD MEDIA DOWNLOADER STUDIO</p>
+      </div>
+
+      <div class="splash-loader-box">
+        <div class="splash-track">
+          <div class="splash-bar" id="splashBar"></div>
+        </div>
+        <div class="splash-status-row">
+          <span class="splash-status-text" id="splashStatusText">Initializing SKD CyberGuard & Multi-Thread Engine...</span>
+          <span class="splash-pct" id="splashPct">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    
+    <!-- ========================================================================= -->
+    <!-- LEFT COMPACT PREMIUM SIDEBAR                                              -->
+    <!-- ========================================================================= -->
+    <aside class="sidebar">
+      
+      <!-- Brand Header -->
+      <div class="brand-container">
+        <div class="brand-logo-box">
+          <img src="assets/skd_logo_clean.png" alt="SKD Logo" class="brand-img" onerror="this.src='../assets/skd_logo_clean.png'">
+        </div>
+        <div class="brand-info">
+          <div class="brand-title-row">
+            <h1 class="brand-title">SKD TOOL</h1>
+            <span class="pro-tag">PRO</span>
+          </div>
+          <p class="brand-subtitle">Ultimate Media Suite</p>
+        </div>
+      </div>
+
+      <!-- Navigation Menu with 6 Workspaces -->
+      <div class="sidebar-nav-wrapper">
+        
+        <div class="nav-section-label">MEDIA</div>
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-tab="instant" id="sidebarBtnInstant">
+            <i data-lucide="zap" class="nav-icon"></i>
+            <span>Instant Download</span>
+          </button>
+          <button class="nav-item" data-tab="batch" id="sidebarBtnBatch">
+            <i data-lucide="layers" class="nav-icon"></i>
+            <span>Batch & Playlist</span>
+          </button>
+        </nav>
+
+        <div class="nav-section-label">STORAGE</div>
+        <nav class="sidebar-nav">
+          <button class="nav-item" data-tab="vault" id="sidebarBtnVault">
+            <i data-lucide="folder-archive" class="nav-icon"></i>
+            <span>Media Vault</span>
+          </button>
+          <button class="nav-item" data-tab="settings" id="sidebarBtnSettings">
+            <i data-lucide="settings" class="nav-icon"></i>
+            <span>Settings</span>
+          </button>
+        </nav>
+
+      </div>
+
+      <!-- VIP License Card -->
+      <div class="pro-user-card" id="proUserCard">
+        <div class="pro-badge-header">
+          <div class="status-indicator"></div>
+          <span class="pro-title" id="licenseStatusTitle">PRO VIP ACTIVATED</span>
+        </div>
+        <div class="pro-days-badge" id="licenseStatusDays">28 Days Remaining</div>
+        <p class="pro-subtext">Hardware Guarded & Cryptographically Verified</p>
+        <button class="manage-sub-btn" id="btnManageSubscription">License & HWID Info</button>
+      </div>
+
+    </aside>
+
+    <!-- ========================================================================= -->
+    <!-- RIGHT MAIN CONTENT AREA                                                   -->
+    <!-- ========================================================================= -->
+    <main class="main-content">
+      
+      <!-- Top Navigation Header -->
+      <header class="top-header">
+        <div class="top-header-left">
+          <div class="header-workspace-badge">
+            <span class="pulse-dot-cyan"></span>
+            <span id="currentWorkspaceTitle">INSTANT DOWNLOADER WORKSPACE</span>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="ver-header-btn" id="btnTopBarUpdate" title="Check for Updates" style="display:none;">
+            <span class="update-pulse-indicator"></span>
+            <span id="topBarUpdateLabel">v1.0.9 Update Available</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Tab Views Container -->
+      <div class="views-wrapper">
+        
+        <!-- =================================================================== -->
+        <!-- WORKSPACE 1: INSTANT DOWNLOADER                                    -->
+        <!-- =================================================================== -->
+        <section class="tab-view active" id="viewInstant">
+          
+          <div class="hero-section">
+            <div class="hero-text-box">
+              <h2 class="hero-main-title">
+                <span class="title-white">SKD</span>
+                <span class="title-cyan">Media Downloader</span>
+              </h2>
+              <p class="hero-subtitle">
+                Download 4K UHD videos, Reels, TikTok No-Watermark, Playlists, and extract 320kbps MP3 audio with zero limits.
+              </p>
+            </div>
+          </div>
+
+          <!-- URL Input Card (Spacious Focused Redesign) -->
+          <div class="card input-card hero-input-card">
+            <div class="card-tag">
+              <div class="card-tag-left">
+                <i data-lucide="link-2" class="text-cyan"></i>
+                <span id="lblPastePrompt">PASTE YOUR MEDIA LINK</span>
+              </div>
+              <span class="tag-badge" id="platformDetectBadge">AUTO-DETECT</span>
+            </div>
+            
+            <div class="hero-input-box">
+              <i data-lucide="link" class="hero-input-icon"></i>
+              <input type="text" id="urlInput" placeholder="Paste YouTube, TikTok, Pinterest, Facebook, Instagram, Twitter/X, Douyin, MP4, MP3..." autocomplete="off" spellcheck="false">
+              <div class="hero-input-actions">
+                <button class="btn-inline-paste" id="btnPaste" title="Paste from clipboard">
+                  <i data-lucide="clipboard-copy"></i>
+                  <span>Paste</span>
+                </button>
+                <button class="btn-inline-clear" id="btnClearUrl" title="Clear input">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="hero-footer-row">
+              <div class="hero-sub-status">
+                <div class="sub-status-pill">
+                  <span class="pulse-dot-cyan"></span>
+                  <span>⚡ Multi-Thread Accelerator • 1000+ Platforms Supported</span>
+                </div>
+              </div>
+
+              <div class="hero-action-buttons">
+                <button class="btn-download-primary hero-btn-download" id="btnDownloadNow">
+                  <i data-lucide="zap"></i>
+                  <span>DOWNLOAD NOW</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SMART LINK ANALYZER & PREVIEW CARD -->
+          <div class="card smart-analyzer-card" id="smartAnalyzerCard" style="display:none;">
+            <div class="smart-card-inner">
+              
+              <!-- Thumbnail & Badges -->
+              <div class="smart-thumb-box">
+                <img src="assets/default_thumb.png" alt="Preview" id="smartThumbImg" class="smart-thumb-img" onerror="this.src='../assets/default_thumb.png'">
+                <div class="smart-platform-pill" id="smartPlatformPill">YouTube</div>
+                <div class="smart-dur-pill" id="smartDurationPill">00:00</div>
+              </div>
+
+              <!-- Metadata Info -->
+              <div class="smart-meta-box">
+                <div class="smart-header-row">
+                  <h3 class="smart-title" id="smartTitleText">Analyzing media stream...</h3>
+                </div>
+                <div class="smart-details-row">
+                  <span class="smart-detail-chip" id="smartCreatorChip">
+                    <i data-lucide="user"></i>
+                    <span id="smartCreatorText">Unknown Channel</span>
+                  </span>
+                  <span class="smart-detail-chip" id="smartDateChip">
+                    <i data-lucide="calendar"></i>
+                    <span id="smartDateText">Today</span>
+                  </span>
+                  <span class="smart-detail-chip chip-cyan" id="smartSizeChip">
+                    <i data-lucide="hard-drive"></i>
+                    <span id="smartSizeText">Auto Stream</span>
+                  </span>
+                </div>
+
+                <!-- Format Selection Chips -->
+                <div class="smart-formats-row" id="smartFormatsRow">
+                  <span class="fmt-label">Choose Quality:</span>
+                  <button class="smart-fmt-btn active" data-fmt="1080p">1080p Full HD</button>
+                  <button class="smart-fmt-btn" data-fmt="4k">4K UHD</button>
+                  <button class="smart-fmt-btn" data-fmt="720p">720p HD</button>
+                  <button class="smart-fmt-btn" data-fmt="mp3">MP3 320kbps</button>
+                  <button class="smart-fmt-btn" data-fmt="m4a">M4A Audio</button>
+                </div>
+              </div>
+
+              <!-- Quick Actions -->
+              <div class="smart-actions-box">
+                <button class="btn-download-primary btn-sm" id="btnSmartDownload">
+                  <i data-lucide="download"></i>
+                  <span id="smartBtnDlText">Download Now</span>
+                </button>
+                <button class="btn-secondary btn-sm" id="btnSmartDownloadCover" title="Download High-Resolution Cover/Thumbnail">
+                  <i data-lucide="image"></i>
+                  <span>HD Cover</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 5-Card Quality Preset Grid (Professional Suite Mode) -->
+          <div class="quality-grid">
+            <!-- 1. Optimal Quality (Auto Best Mode - Default) -->
+            <div class="quality-card active recommended-card" data-preset="auto" id="presetCardAuto">
+              <div class="quality-card-header">
+                <span class="quality-badge badge-studio-recommended">⭐ AUTO BEST HD</span>
+                <span class="check-circle">✔</span>
+              </div>
+              <h3 class="quality-card-title">Optimal Quality</h3>
+              <p class="quality-card-sub">Auto-Detect Best Resolution</p>
+            </div>
+
+            <!-- 2. 1080p Full HD Profile -->
+            <div class="quality-card" data-preset="1080p" id="presetCard1080p">
+              <div class="quality-card-header">
+                <span class="quality-badge badge-blue">⚡ 1080P FULL HD</span>
+                <span class="check-circle">✔</span>
+              </div>
+              <h3 class="quality-card-title">1080p Full HD</h3>
+              <p class="quality-card-sub">Standard 60fps • Crystal Clear</p>
+            </div>
+
+            <!-- 3. 4K Ultra -->
+            <div class="quality-card" data-preset="4k" id="presetCard4k">
+              <div class="quality-card-header">
+                <span class="quality-badge badge-purple">💎 4K ULTRA</span>
+                <span class="check-circle">✔</span>
+              </div>
+              <h3 class="quality-card-title">2160p UHD</h3>
+              <p class="quality-card-sub">Ultra High Definition</p>
+            </div>
+
+            <!-- 4. 720p Fast -->
+            <div class="quality-card" data-preset="720p" id="presetCard720p">
+              <div class="quality-card-header">
+                <span class="quality-badge badge-blue">⚡ HD FAST</span>
+                <span class="check-circle">✔</span>
+              </div>
+              <h3 class="quality-card-title">720p Fast</h3>
+              <p class="quality-card-sub">Lightweight & High-Speed</p>
+            </div>
+
+            <!-- 5. 320kbps MP3 -->
+            <div class="quality-card" data-preset="mp3" id="presetCardMp3">
+              <div class="quality-card-header">
+                <span class="quality-badge badge-pink">🎵 AUDIO PRO</span>
+                <span class="check-circle">✔</span>
+              </div>
+              <h3 class="quality-card-title">320kbps MP3</h3>
+              <p class="quality-card-sub">Studio Master Audio</p>
+            </div>
+          </div>
+
+          <!-- Studio Options Accordion -->
+          <div class="studio-options-container">
+            <button class="accordion-toggle" id="btnStudioOptionsToggle">
+              <div class="accordion-title">
+                <i data-lucide="settings-2"></i>
+                <span>Studio Options (Subtitles, Bitrate, Video Trimming)</span>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow" id="accordionArrow"></i>
+            </button>
+
+            <div class="accordion-content" id="studioOptionsContent">
+              <div class="options-grid">
+                <label class="custom-checkbox">
+                  <input type="checkbox" id="chkSubtitles">
+                  <span class="checkbox-box"></span>
+                  <span>Download Subtitles (.srt)</span>
+                </label>
+
+                <div class="option-group">
+                  <label for="selectBitrate">MP3 Bitrate:</label>
+                  <select id="selectBitrate" class="custom-select">
+                    <option value="320k" selected>320 kbps (High Quality)</option>
+                    <option value="256k">256 kbps</option>
+                    <option value="192k">192 kbps</option>
+                    <option value="128k">128 kbps</option>
+                  </select>
+                </div>
+
+                <div class="option-group trim-group">
+                  <label>Video Trim:</label>
+                  <input type="text" id="trimStart" placeholder="00:00:00" class="trim-input" title="Start Time">
+                  <span class="dash">-</span>
+                  <input type="text" id="trimEnd" placeholder="00:05:00" class="trim-input" title="End Time">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Download Progress Card -->
+          <div class="card transfer-card" id="transferCard" style="display: none;">
+            <div class="thumb-container">
+              <img src="assets/default_thumb.png" alt="Preview Thumbnail" id="mediaThumbImg" class="thumb-img" onerror="this.src='../assets/default_thumb.png'">
+              <div class="thumb-timer-bar">
+                <span id="thumbDuration">00:00 / 00:00</span>
+              </div>
+            </div>
+
+            <div class="transfer-info">
+              <div class="transfer-header-row">
+                <h3 class="media-title" id="mediaTitleText">Connecting to Stream Server...</h3>
+              </div>
+              <p class="media-subtitle" id="mediaSubText">Please wait while the media stream is initialized</p>
+
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="metrics-row">
+                <div class="metric-item metric-speed">
+                  <i data-lucide="zap"></i>
+                  <span id="metricSpeed">Speed: 0 KB/s</span>
+                </div>
+                <div class="metric-item metric-eta">
+                  <i data-lucide="clock"></i>
+                  <span id="metricEta">ETA: --:--</span>
+                </div>
+                <div class="metric-item metric-size" id="metricSizePercent">
+                  0 MB / 0 MB (0.0%)
+                </div>
+              </div>
+            </div>
+
+            <div class="transfer-controls" id="transferControlsActive">
+              <button class="btn-control btn-pause" id="btnPause" title="Pause or Resume download">
+                <i data-lucide="pause"></i>
+                <span id="lblPause">Pause</span>
+              </button>
+              <button class="btn-control btn-stop" id="btnStop" title="Cancel download">
+                <i data-lucide="square"></i>
+                <span>Stop</span>
+              </button>
+            </div>
+
+            <div class="transfer-controls transfer-controls-done" id="transferControlsCompleted" style="display: none;">
+              <button class="btn-control btn-completed-play inapp-play-btn" id="btnCompletedPlayInApp" title="Play directly inside SKD Tool">
+                <i data-lucide="play-circle"></i>
+                <span>Play In-App</span>
+              </button>
+              <button class="btn-control btn-completed-play" id="btnCompletedOpen" title="Open and play in external player">
+                <i data-lucide="external-link"></i>
+                <span>Open</span>
+              </button>
+              <button class="btn-control btn-completed-folder" id="btnCompletedFolder" title="Open in folder">
+                <i data-lucide="folder"></i>
+                <span>Folder</span>
+              </button>
+              <button class="btn-control btn-completed-delete" id="btnCompletedDelete" title="Delete this video file from computer">
+                <i data-lucide="trash-2"></i>
+                <span>Delete</span>
+              </button>
+              <button class="btn-control-icon-dismiss" id="btnCompletedDismiss" title="Dismiss">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Recent Downloads -->
+          <div class="recent-activity-section card">
+            <div class="section-header-row">
+              <div class="section-title-group">
+                <div class="section-icon-pill">
+                  <i data-lucide="history"></i>
+                </div>
+                <div>
+                  <h3 class="section-main-heading">RECENT DOWNLOADS</h3>
+                  <p class="section-sub-heading">Completed downloads and recent media activity</p>
+                </div>
+              </div>
+
+              <div class="section-actions-group">
+                <button class="btn-action-link" id="btnOpenDownloadsFolder" title="Open Download Folder">
+                  <i data-lucide="folder-open"></i>
+                  <span>Open Folder</span>
+                </button>
+                <button class="btn-action-link" id="btnGoToVault" title="View all files in Media Vault">
+                  <span>View All in Vault</span>
+                  <i data-lucide="chevron-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="recent-downloads-container" id="recentDownloadsList">
+              <div class="empty-recent-state">
+                <i data-lucide="inbox" class="empty-icon"></i>
+                <p>No recent downloads yet. Paste a link above to start downloading media!</p>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- WORKSPACE 2: DOWNLOAD QUEUE MANAGER                                -->
+        <!-- =================================================================== -->
+        <section class="tab-view" id="viewQueue">
+          
+          <div class="tab-header-flex">
+            <div>
+              <h2>Download Queue Dashboard</h2>
+              <p>Manage multi-stream simultaneous downloads, pause/resume, reorder priority, and auto-retry.</p>
+            </div>
+
+            <!-- Queue Global Controls -->
+            <div class="queue-global-actions">
+              <div class="concurrency-control-box">
+                <label for="queueConcurrencyRange">Simultaneous Streams:</label>
+                <input type="range" id="queueConcurrencyRange" min="1" max="10" value="3" class="concurrency-slider">
+                <span class="concurrency-val-badge" id="queueConcurrencyVal">3</span>
+              </div>
+              <button class="btn-download-primary" id="btnStartQueueGlobal">
+                <i data-lucide="play"></i>
+                <span>START QUEUE</span>
+              </button>
+              <button class="btn-secondary" id="btnPauseQueueGlobal">
+                <i data-lucide="pause"></i>
+                <span>Pause</span>
+              </button>
+              <button class="btn-secondary" id="btnClearCompletedQueue">
+                <i data-lucide="check-check"></i>
+                <span>Clear Done</span>
+              </button>
+              <button class="btn-danger" id="btnClearAllQueue">
+                <i data-lucide="trash-2"></i>
+                <span>Clear All</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Queue Items List Container -->
+          <div class="card queue-container-card">
+            <div class="queue-items-list" id="queueItemsList">
+              <div class="empty-state">
+                <i data-lucide="list-ordered" class="empty-icon"></i>
+                <p>Queue is currently empty. Add media links from Instant Downloader or Batch Workspace.</p>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- WORKSPACE 3: BATCH & PLAYLIST DOWNLOADER                           -->
+        <!-- =================================================================== -->
+        <section class="tab-view" id="viewBatch">
+          
+          <div class="tab-header">
+            <h2>Batch & Playlist Multi-Stream Downloader</h2>
+            <p>Paste multiple links, import from text files, or extract complete playlists with custom indexing.</p>
+          </div>
+
+          <!-- Sub-tabs for Batch vs Playlist -->
+          <div class="batch-subtab-row">
+            <button class="subtab-btn active" id="subtabBtnBatch">Multi-Link Batch</button>
+            <button class="subtab-btn" id="subtabBtnPlaylist">YouTube / Media Playlist Extractor</button>
+          </div>
+
+          <!-- SUB-VIEW 1: MULTI-LINK BATCH -->
+          <div class="batch-subview active" id="subviewBatchLinks">
+            <div class="card">
+              <div class="card-tag">
+                <i data-lucide="layers" class="text-cyan"></i>
+                <span>PASTE MULTIPLE LINKS (ONE PER LINE)</span>
+              </div>
+
+              <textarea id="batchUrlsInput" rows="6" placeholder="https://www.youtube.com/watch?v=...&#10;https://www.tiktok.com/@user/video/...&#10;https://www.facebook.com/watch/...&#10;https://example.com/stream.mp4"></textarea>
+
+              <div class="batch-options-row">
+                <div class="option-group">
+                  <label for="batchPresetSelect">Download Quality for All:</label>
+                  <select id="batchPresetSelect" class="custom-select">
+                    <option value="4k">4K Ultra HD (2160p)</option>
+                    <option value="1080p" selected>1080p Full HD (Recommended)</option>
+                    <option value="720p">720p Fast HD</option>
+                    <option value="mp3">Audio MP3 (320kbps)</option>
+                    <option value="m4a">Audio M4A</option>
+                  </select>
+                </div>
+
+                <div class="batch-buttons-group">
+                  <button class="btn-secondary" id="btnImportLinksFile">
+                    <i data-lucide="file-text"></i>
+                    <span>Import .txt / .csv</span>
+                  </button>
+                  <button class="btn-secondary" id="btnBatchAddToQueue">
+                    <i data-lucide="plus-circle"></i>
+                    <span>Add to Queue</span>
+                  </button>
+                  <button class="btn-download-primary" id="btnStartBatchDirect">
+                    <i data-lucide="play"></i>
+                    <span>Start Batch Now</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB-VIEW 2: PLAYLIST EXTRACTOR -->
+          <div class="batch-subview" id="subviewPlaylist">
+            <div class="card">
+              <div class="input-action-row">
+                <div class="input-wrapper">
+                  <i data-lucide="list-video" class="input-leading-icon"></i>
+                  <input type="text" id="playlistUrlInput" placeholder="Paste Playlist URL (YouTube playlist, Channel, Album...)">
+                </div>
+                <button class="btn-download-primary" id="btnExtractPlaylist">
+                  <i data-lucide="search"></i>
+                  <span>Extract Playlist</span>
+                </button>
+              </div>
+
+              <!-- Playlist Summary Card (Hidden until extracted) -->
+              <div class="playlist-summary-card" id="playlistSummaryCard" style="display:none;">
+                <div class="playlist-summary-left">
+                  <h3 id="playlistTitleText">Playlist Title</h3>
+                  <p id="playlistMetaText">0 Videos • 00:00 Total Duration • Channel Name</p>
+                </div>
+
+                <div class="playlist-options-bar">
+                  <label class="custom-checkbox">
+                    <input type="checkbox" id="chkPlaylistNumbering" checked>
+                    <span class="checkbox-box"></span>
+                    <span>Index Numbering (01 - Title.mp4)</span>
+                  </label>
+                  <label class="custom-checkbox">
+                    <input type="checkbox" id="chkPlaylistSkipExisting" checked>
+                    <span class="checkbox-box"></span>
+                    <span>Skip Existing Files</span>
+                  </label>
+                </div>
+
+                <div class="playlist-actions-row">
+                  <button class="btn-secondary btn-sm" id="btnPlaylistSelectAll">Select All</button>
+                  <button class="btn-secondary btn-sm" id="btnPlaylistUnselectAll">Deselect All</button>
+                  <button class="btn-secondary btn-sm" id="btnPlaylistAddQueue">Add Selected to Queue</button>
+                  <button class="btn-download-primary btn-sm" id="btnPlaylistDownloadSelected">Download Selected</button>
+                </div>
+
+                <!-- Playlist Items Table -->
+                <div class="playlist-items-table" id="playlistItemsContainer">
+                  <!-- Dynamic items -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </section>
+
+
+
+
+
+        <!-- =================================================================== -->
+        <!-- WORKSPACE 6: MEDIA VAULT & ANALYTICS                               -->
+        <!-- =================================================================== -->
+        <section class="tab-view" id="viewVault">
+          
+          <div class="tab-header">
+            <h2>Media Vault & Performance Analytics</h2>
+            <p>Archive of all downloaded media files, playback launcher, and session bandwidth throughput.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">Total Saved Files</span>
+              <div class="stat-val text-cyan" id="statTotalCount">0</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Total Media Size</span>
+              <div class="stat-val text-white" id="statTotalSize">0 MB</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Multi-Thread Engine</span>
+              <div class="stat-val-health">
+                <span class="stat-health-dot"></span>
+                <span>Active (32 Streams)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:16px;">
+            <div class="vault-controls-row">
+              <div class="search-box-wrapper">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="vaultSearchInput" placeholder="Search downloaded files by name, category, or date...">
+              </div>
+              <button class="btn-secondary" id="btnRefreshVault">
+                <i data-lucide="rotate-cw"></i>
+                <span>Refresh</span>
+              </button>
+              <button class="btn-danger" id="btnClearHistoryAll">
+                <i data-lucide="trash-2"></i>
+                <span>Clear History</span>
+              </button>
+            </div>
+
+            <div class="vault-list-container" id="vaultListContainer">
+              <div class="empty-state">No media files found in Vault.</div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- WORKSPACE 7: SYSTEM SETTINGS                                       -->
+        <!-- =================================================================== -->
+        <section class="tab-view" id="viewSettings">
+          
+          <div class="tab-header">
+            <h2>System Settings & Preferences</h2>
+            <p>Configure default download directory, speed limiters, network proxies, and browser cookies.</p>
+          </div>
+
+          <div class="card">
+            <div class="setting-row">
+              <label for="settingLanguage">Application Language (ភាសា):</label>
+              <select id="settingLanguage" class="custom-select">
+                <option value="km" selected>ភាសាខ្មែរ (Khmer 🇰🇭)</option>
+                <option value="en">English (US 🇺🇸)</option>
+              </select>
+            </div>
+
+            <div class="setting-row">
+              <label for="settingSaveDir">Default Download Directory:</label>
+              <div class="input-with-btn">
+                <input type="text" id="settingSaveDir" readonly>
+                <button class="btn-secondary" id="btnBrowseFolder">Browse</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <label for="settingSpeedLimit">Speed Limit (KB/s, 0 = Unlimited):</label>
+              <input type="number" id="settingSpeedLimit" min="0" placeholder="0">
+            </div>
+
+            <div class="setting-row">
+              <label for="settingCookies">Extract Browser Cookies (Bypasses Private / 403 streams):</label>
+              <select id="settingCookies" class="custom-select">
+                <option value="none">None (Direct)</option>
+                <option value="chrome">Google Chrome</option>
+                <option value="edge">Microsoft Edge</option>
+                <option value="firefox">Mozilla Firefox</option>
+                <option value="brave">Brave Browser</option>
+              </select>
+            </div>
+
+            <div class="setting-row">
+              <label for="settingSoundMode">Download Completion Audio Alert Mode:</label>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <select id="settingSoundMode" class="custom-select" style="flex:1;">
+                  <option value="bell" selected>Windows System Notification Sound (Default)</option>
+                  <option value="chime">Studio Crystal Chime</option>
+                  <option value="mute">Mute (Silent)</option>
+                </select>
+                <button type="button" class="btn-secondary" id="btnTestSoundSettings" style="min-width:105px; padding:7px 12px; font-size:0.78rem;">
+                  <i data-lucide="volume-2"></i>
+                  <span>Test Audio</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="setting-actions">
+              <button class="btn-download-primary" id="btnSaveSettings">
+                <i data-lucide="save"></i>
+                <span>Save Settings</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Version & Update Card -->
+          <div class="card" style="margin-top: 12px;">
+            <div class="setting-row">
+              <label>Software Version & Update Channel:</label>
+              <div class="version-status-row">
+                <div class="version-badge-big">
+                  <i data-lucide="shield-check" class="text-cyan"></i>
+                  <span id="settingCurrentVerText">Version 1.0.9 (Official Stable)</span>
+                </div>
+                <button class="btn-secondary" id="btnCheckUpdateManual">
+                  <i data-lucide="rotate-cw"></i>
+                  <span>Check for Updates</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="setting-row" style="margin-top: 8px;">
+              <label for="settingUpdateUrl">Remote Update Server Feed URL (Optional):</label>
+              <input type="text" id="settingUpdateUrl" placeholder="https://raw.githubusercontent.com/.../update.json">
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- ACTIVATION & VIP LICENSE DETAILS MODAL                                   -->
+  <!-- ======================================================================= -->
+  <div class="modal-overlay" id="activationModal">
+    <div class="modal-card">
+      <button class="modal-close-btn" id="btnCloseModal" title="Close">✕</button>
+
+      <div class="modal-view" id="viewActiveLicense">
+        <div class="modal-header">
+          <div class="vip-shield-icon">🛡️</div>
+          <h2>SKD Tool VIP Certificate</h2>
+          <p>Your license is fully active and cryptographically verified.</p>
+        </div>
+
+        <div class="license-info-card">
+          <div class="info-row">
+            <span class="info-label">Status:</span>
+            <span class="status-pill-green">✓ ACTIVE & VERIFIED</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Active Key:</span>
+            <span class="info-val font-mono" id="modalActiveKey">SKD-30D-XXXX-XXXX</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Plan Type:</span>
+            <span class="info-val font-bold" id="modalActivePlan">30 Days VIP</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Time Remaining:</span>
+            <span class="info-val text-emerald font-bold" id="modalActiveDays">28 Days Remaining</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Hardware ID:</span>
+            <div class="hwid-mini-row">
+              <span class="info-val font-mono" id="modalActiveHwid">SKD-XXXX-XXXX-XXXX</span>
+              <button class="btn-mini-copy" id="btnCopyActiveHwid" title="Copy HWID">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions-dual">
+          <button class="btn-download-primary btn-block" id="btnDoneModal">
+            <span>✓ OK, Got It</span>
+          </button>
+          <button class="link-btn" id="btnSwitchToChangeKey">
+            <span>🔄 Change / Renew License Key</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-view" id="viewActivationForm">
+        <div class="modal-header">
+          <img src="assets/skd_logo_clean.png" alt="SKD Logo" class="modal-logo" onerror="this.src='../assets/skd_logo_clean.png'">
+          <h2>Activate SKD Tool VIP</h2>
+          <p>Enter your cryptographic license key to unlock all features.</p>
+        </div>
+
+        <div class="modal-field">
+          <label>Your Machine Hardware ID (HWID):</label>
+          <div class="input-with-btn">
+            <input type="text" id="modalHwid" readonly>
+            <button class="btn-secondary" id="btnCopyHwid">Copy HWID</button>
+          </div>
+        </div>
+
+        <div class="modal-field">
+          <label for="modalKeyInput">Enter License Key:</label>
+          <input type="text" id="modalKeyInput" placeholder="SKD-30D-XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="modal-msg" id="modalStatusMsg"></div>
+
+        <button class="btn-download-primary btn-block" id="btnActivateLicense">
+          <i data-lucide="key"></i>
+          <span>Activate License Now</span>
+        </button>
+
+        <div class="modal-actions-dual" id="backToActiveBox" style="display:none; margin-top:8px;">
+          <button class="link-btn" id="btnBackToActiveView">
+            <span>← Back to Active License Details</span>
+          </button>
+        </div>
+
+        <div class="telegram-support-box">
+          <p>Need a trial key or subscription license? Contact Admin:</p>
+          <button class="btn-telegram" id="btnContactAdmin">
+            <i data-lucide="send"></i>
+            <span>Contact via Telegram (@SKD_ADMIN)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- REMOTE SOFTWARE UPDATE MODAL                                            -->
+  <!-- ======================================================================= -->
+  <div class="modal-overlay" id="updateModal">
+    <div class="modal-card update-modal-card">
+      <button class="modal-close-btn" id="btnCloseUpdateModal" title="Close">✕</button>
+
+      <div class="update-header">
+        <div class="update-icon-glow">🚀</div>
+        <div class="update-badge-row">
+          <span class="update-tag">NEW UPDATE AVAILABLE</span>
+          <span class="update-policy-tag" id="updatePolicyTag">OPTIONAL</span>
+        </div>
+        <h2 id="updateModalTitle">SKD TOOL v1.2.0</h2>
+        <p class="update-subtext" id="updateReleaseDate">Released recently</p>
+      </div>
+
+      <div class="version-diff-bar">
+        <div class="ver-pill ver-current">Current: <span id="lblCurrentVer">v1.1.0</span></div>
+        <i data-lucide="arrow-right" class="ver-arrow"></i>
+        <div class="ver-pill ver-latest">Latest: <span id="lblLatestVer">v1.2.0</span></div>
+      </div>
+
+      <div class="changelog-container">
+        <div class="changelog-title">
+          <i data-lucide="sparkles" class="text-cyan"></i>
+          <span>What's New in this Release:</span>
+        </div>
+        <div class="changelog-list" id="updateChangelogList"></div>
+      </div>
+
+      <div class="update-progress-box" id="updateProgressBox" style="display:none;">
+        <div class="update-prog-header">
+          <span id="updateProgStatus">Downloading update package...</span>
+          <span id="updateProgPct">0%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="updateProgBarFill" style="width: 0%;"></div>
+        </div>
+        <div class="update-prog-speed" id="updateProgSpeed">Connecting to update server...</div>
+      </div>
+
+      <div class="update-actions-row" id="updateActionsRow">
+        <button class="btn-download-primary btn-update-action" id="btnApplyUpdate">
+          <i data-lucide="download-cloud"></i>
+          <span id="lblBtnApplyUpdate">UPDATE NOW</span>
+        </button>
+        <button class="btn-secondary" id="btnLaterUpdate">
+          <span>⏱️ LATER</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- SYSTEM SHUTDOWN COUNTDOWN MODAL                                         -->
+  <!-- ======================================================================= -->
+  <div class="modal-overlay" id="shutdownModal">
+    <div class="modal-card shutdown-modal-card">
+      <div class="modal-header">
+        <div class="shutdown-icon-glow">⚠️</div>
+        <h2>Automated System Shutdown</h2>
+        <p>All queue downloads have finished. Computer will power off in:</p>
+      </div>
+      <div class="shutdown-countdown-display" id="shutdownCountdownText">30s</div>
+      <div class="modal-actions-dual">
+        <button class="btn-danger btn-block" id="btnCancelShutdown">
+          <i data-lucide="x-circle"></i>
+          <span>Cancel Shutdown (Stay Powered On)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- FLOATING CLIPBOARD DETECTED TOAST                                       -->
+  <!-- ======================================================================= -->
+  <div class="floating-clipboard-toast" id="clipboardToast" style="display:none;">
+    <div class="toast-icon">📋</div>
+    <div class="toast-info">
+      <h4>Media Link Detected in Clipboard!</h4>
+      <p id="clipboardToastUrl">https://...</p>
+    </div>
+    <div class="toast-actions">
+      <button class="btn-toast-download" id="btnToastDownload">Download</button>
+      <button class="btn-toast-queue" id="btnToastQueue">+ Queue</button>
+      <button class="btn-toast-close" id="btnToastClose">✕</button>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- IN-APP MEDIA PLAYER & PREVIEW MODAL                                     -->
+  <!-- ======================================================================= -->
+  <div class="modal-overlay" id="inAppPlayerModal" style="display:none;">
+    <div class="modal-card player-modal-card">
+      <div class="player-modal-header">
+        <div class="player-title-box">
+          <span class="pulse-dot-cyan"></span>
+          <h3 id="inAppPlayerTitle">Media Preview</h3>
+        </div>
+        <button class="btn-icon" id="btnClosePlayerModal" title="Close Preview">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="player-viewport-container">
+        <video id="inAppPlayerVideo" class="player-video-element" controls playsinline></video>
+        <div id="inAppPlayerAudioVisualizer" class="player-audio-visualizer" style="display:none;">
+          <div class="audio-art-icon">🎵</div>
+          <div class="audio-waves">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-meta-bar">
+        <div class="player-meta-left">
+          <span class="player-file-path" id="inAppPlayerPath">C:\...</span>
+        </div>
+        <div class="player-meta-actions">
+          <button class="btn-secondary btn-sm" id="btnPlayerOpenFolder">
+            <i data-lucide="folder"></i>
+            <span>Folder</span>
+          </button>
+          <button class="btn-download-primary btn-sm" id="btnPlayerOpenExternal">
+            <i data-lucide="external-link"></i>
+            <span>Open in VLC</span>
+          </button>
+        </div>
+      </div>
+  <!-- ======================================================================= -->
+  <!-- FILE DETAILS & METADATA MODAL                                            -->
+  <!-- ======================================================================= -->
+  <div class="modal-overlay" id="fileDetailsModal" style="display:none;">
+    <div class="modal-card details-modal-card">
+      <div class="modal-header">
+        <div class="details-icon-glow">ℹ️</div>
+        <h2>Media File Details</h2>
+        <p>Complete information and metadata for this downloaded item.</p>
+        <button class="modal-close-btn" id="btnCloseDetailsModal" title="Close">✕</button>
+      </div>
+
+      <div class="details-content-box">
+        <div class="details-row">
+          <span class="details-label">File Name:</span>
+          <span class="details-val text-white" id="detFileName">Media File.mp4</span>
+        </div>
+        <div class="details-row">
+          <span class="details-label">File Size:</span>
+          <span class="details-val text-cyan" id="detFileSize">0 MB</span>
+        </div>
+        <div class="details-row">
+          <span class="details-label">Category / Format:</span>
+          <span class="details-val" id="detFileCategory">Video</span>
+        </div>
+        <div class="details-row">
+          <span class="details-label">Download Date:</span>
+          <span class="details-val" id="detFileDate">Recently</span>
+        </div>
+        <div class="details-row details-row-path">
+          <span class="details-label">Local File Path:</span>
+          <div class="details-path-box">
+            <span class="details-path-text" id="detFilePath">C:\...</span>
+            <button class="btn-copy-mini" id="btnCopyDetPath" title="Copy full path">Copy</button>
+          </div>
+        </div>
+        <div class="details-row details-row-url" id="detUrlRow">
+          <span class="details-label">Source URL:</span>
+          <div class="details-path-box">
+            <span class="details-path-text" id="detFileUrl">https://...</span>
+            <button class="btn-copy-mini" id="btnCopyDetUrl" title="Copy URL">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions-dual">
+        <button class="btn-secondary" id="btnDetOpenFolder">
+          <i data-lucide="folder"></i>
+          <span>Open Folder</span>
+        </button>
+        <button class="btn-download-primary" id="btnDetPlayInApp">
+          <i data-lucide="play"></i>
+          <span>Play in App</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Context Menu for Right-Click Interaction -->
+  <div id="customContextMenu" class="custom-context-menu" style="display: none;">
+    <div class="context-menu-item" id="ctxMenuPaste">
+      <div class="ctx-item-left">
+        <i data-lucide="clipboard-copy"></i>
+        <span id="ctxLblPaste">Paste</span>
+      </div>
+      <span class="ctx-shortcut">Ctrl+V</span>
+    </div>
+    <div class="context-menu-item" id="ctxMenuCopy">
+      <div class="ctx-item-left">
+        <i data-lucide="copy"></i>
+        <span id="ctxLblCopy">Copy</span>
+      </div>
+      <span class="ctx-shortcut">Ctrl+C</span>
+    </div>
+    <div class="context-menu-item" id="ctxMenuCut">
+      <div class="ctx-item-left">
+        <i data-lucide="scissors"></i>
+        <span id="ctxLblCut">Cut</span>
+      </div>
+      <span class="ctx-shortcut">Ctrl+X</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" id="ctxMenuSelectAll">
+      <div class="ctx-item-left">
+        <i data-lucide="check-square"></i>
+        <span id="ctxLblSelectAll">Select All</span>
+      </div>
+      <span class="ctx-shortcut">Ctrl+A</span>
+    </div>
+    <div class="context-menu-item" id="ctxMenuClear">
+      <div class="ctx-item-left">
+        <i data-lucide="trash-2"></i>
+        <span id="ctxLblClear">Clear</span>
+      </div>
+      <span class="ctx-shortcut">Del</span>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
