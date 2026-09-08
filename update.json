@@ -1,13 +1,18 @@
-## 🚀 SKD TOOL v1.1.0 Release Notes
+{
+  "version": "1.1.0",
+  "title": "SKD TOOL v1.1.0 (Studio 7-Workspace & Turbo Multi-Tier Downloader)",
+  "release_date": "08 Sep 2026",
+  "mandatory": false,
+  "changelog": [
+    "⭐ 7 Complete Workspaces: Instant Download, Batch Queue, Playlist Extractor, Media Converter, Scheduler, Vault & Settings",
+    "🎬 Video to GIF Maker & Studio Audio Volume Booster (150%, 200%, 300%)",
+    "🛡️ YouTube Anti-Bot & Throttling Bypass (iOS/Android/mWeb Multi-Client Rotation)",
+    "⚡ Dual-Language Switching: Instant 1-Click Toggle between ភាសាខ្មែរ 🇰🇭 & English 🇺🇸",
+    "🚀 Zero-Freeze Micro-Patch Engine: Ultra-fast hotfix updates in 0.2 seconds"
+  ],
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.1.0/patch.zip",
+  "sha256": "34d8e3914880db283915ede90ffce95833cde2c4a1dda162f4e20b6aa3d57b52",
+  "file_size": "2.23 MB",
+  "type": "patch"
+}
 
-### ✨ What's New & Improvements:
-* ⭐ **7 Complete Workspaces**: Instant Download, Batch Queue, Playlist Extractor, Media Converter, Scheduler, Vault & Settings
-* 🎬 **Video to GIF Maker & Studio Audio Volume Booster** (150%, 200%, 300%)
-* 🛡️ **YouTube Anti-Bot & Throttling Bypass** (iOS/Android/mWeb Multi-Client Rotation)
-* ⚡ **Dual-Language Switching**: Instant 1-Click Toggle between ភាសាខ្មែរ 🇰🇭 & English 🇺🇸
-* 🚀 **Zero-Freeze Micro-Patch Engine**: Ultra-fast hotfix updates in 0.2 seconds
-
----
-### 📦 Files & Downloads:
-* **`SKD_TOOL.exe`** : កម្មវិធីពេញ (Full Installer) សម្រាប់អ្នកដំឡើងថ្មី
-* **`patch.zip`** : Micro-Patch សម្រាប់អ្នកដែលមានកម្មវិធីស្រាប់ (Auto-Update)
