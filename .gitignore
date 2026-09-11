@@ -30,6 +30,7 @@ armored_app.py
 
 # 4. Media & Test Downloads
 test_dl/
+test_downloads/
 downloads/
 temp/
 *.tmp

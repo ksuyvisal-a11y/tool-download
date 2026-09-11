@@ -78,8 +78,31 @@ def detect_platform(url: str) -> Dict[str, str]:
 # =========================================================================
 # 3. DIRECTORY & PERSISTENT STORAGE HELPERS
 # =========================================================================
+def get_best_available_drive_folder(subfolder: str = "Downloads") -> str:
+    """Find drive with maximum available disk space if C: drive is full."""
+    best_path = ""
+    max_free = 0
+    import string
+    available_drives = [f"{d}:\\" for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
+    for d in available_drives:
+        try:
+            usage = shutil.disk_usage(d)
+            if usage.free > max_free:
+                max_free = usage.free
+                best_path = os.path.join(d, subfolder)
+        except Exception:
+            continue
+    if best_path:
+        try:
+            os.makedirs(best_path, exist_ok=True)
+            return best_path
+        except Exception:
+            pass
+    return os.path.join(os.path.expanduser("~"), subfolder)
+
 def get_default_download_dir() -> str:
-    """Returns default Downloads directory for the user."""
+    """Returns default Downloads directory with low disk space auto-protection."""
+    default_dir = ""
     if os.name == 'nt':
         import winreg
         try:
@@ -87,14 +110,24 @@ def get_default_download_dir() -> str:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, sub_key) as key:
                 location = winreg.QueryValueEx(key, '{374DE290-123F-4565-9164-39C4925E467B}')[0]
                 if os.path.exists(location):
-                    return location
+                    default_dir = location
         except Exception:
             pass
-    home = Path.home()
-    downloads_path = home / "Downloads"
-    if downloads_path.exists():
-        return str(downloads_path)
-    return str(home)
+    if not default_dir:
+        home = Path.home()
+        downloads_path = home / "Downloads"
+        default_dir = str(downloads_path) if downloads_path.exists() else str(home)
+
+    # Check if default drive has critically low space (< 1.5 GB)
+    try:
+        drive_root = os.path.splitdrive(default_dir)[0] + "\\"
+        free_bytes = shutil.disk_usage(drive_root).free
+        if free_bytes < 1.5 * 1024 * 1024 * 1024:  # less than 1.5 GB
+            return get_best_available_drive_folder("Downloads")
+    except Exception:
+        pass
+
+    return default_dir
 
 def get_base_dir() -> str:
     """Get root directory of the application (executable dir when frozen, script dir otherwise)."""
@@ -207,7 +240,8 @@ def load_settings_db() -> Dict[str, Any]:
         "sound_alert": True,
         "clipboard_monitor": True,
         "quality_preset": "1080p Full HD",
-        "audio_bitrate": "320k"
+        "audio_bitrate": "320k",
+        "google_sheet_webhook_url": ""
     }
     if os.path.exists(path):
         try:
@@ -557,4 +591,65 @@ def play_system_alert_sound(sound_mode: str = "both"):
     play_completion_sound_and_voice(sound_mode=sound_mode)
 
 
+# =========================================================================
+# 5. CLOUD ACTIVITY LOGGING & TELEMETRY (GOOGLE SHEETS / DATABASE)
+# =========================================================================
+def log_download_to_google_sheet(
+    title: str,
+    url: str,
+    platform: str = "Web",
+    quality: str = "Default",
+    size: str = "0 MB",
+    status: str = "Completed",
+    webhook_url: Optional[str] = None
+):
+    """
+    Asynchronously logs download activity to Google Sheets webhook.
+    Runs in a detached daemon thread so UI and download speed are never blocked.
+    """
+    import threading
+    import socket
+    import requests
+    from datetime import datetime
 
+    def _worker():
+        try:
+            target_url = webhook_url
+            if not target_url or not str(target_url).strip():
+                settings = load_settings_db()
+                target_url = settings.get("google_sheet_webhook_url", "")
+
+            if not target_url or not str(target_url).strip():
+                return
+
+            device_name = socket.gethostname()
+            timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+
+            # Read license info if available
+            license_info = ""
+            try:
+                lic_path = get_app_data_path("license.json")
+                if os.path.exists(lic_path):
+                    with open(lic_path, "r", encoding="utf-8") as f:
+                        lic_data = json.load(f)
+                        license_info = lic_data.get("license_key", "") or lic_data.get("plan", "")
+            except Exception:
+                pass
+
+            payload = {
+                "timestamp": timestamp,
+                "device": f"{device_name} ({license_info})" if license_info else device_name,
+                "platform": platform or "Universal",
+                "title": title or "Media File",
+                "url": url or "",
+                "quality": quality or "Default",
+                "size": size or "Unknown",
+                "status": status or "Completed"
+            }
+
+            requests.post(str(target_url).strip(), json=payload, timeout=6)
+        except Exception:
+            # Silently handle network timeouts or webhook errors without interrupting the client
+            pass
+
+    threading.Thread(target=_worker, daemon=True).start()

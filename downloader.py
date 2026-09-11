@@ -19,6 +19,7 @@ import shutil
 import uuid
 import re
 import json
+import threading
 import subprocess
 from datetime import datetime
 import urllib.parse
@@ -81,16 +82,10 @@ def get_ffmpeg_location() -> Optional[str]:
     except Exception:
         pass
 
-    # Check standard Windows paths
-    for candidate in [
-        os.path.join(os.environ.get("LOCALAPPDATA", ""), "imageio", "ffmpeg"),
-        os.path.join(os.environ.get("PROGRAMFILES", ""), "ffmpeg", "bin"),
-        os.path.join(os.environ.get("PROGRAMFILES(X86)", ""), "ffmpeg", "bin")
-    ]:
-        if os.path.exists(os.path.join(candidate, "ffmpeg.exe")):
-            if candidate not in os.environ.get("PATH", ""):
-                os.environ["PATH"] = candidate + os.pathsep + os.environ.get("PATH", "")
-            return candidate
+    # Ensure Node.js is in PATH for yt-dlp JS runtime / n-sig execution
+    node_dir = r"C:\Program Files\nodejs"
+    if os.path.exists(os.path.join(node_dir, "node.exe")) and node_dir not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = node_dir + os.pathsep + os.environ.get("PATH", "")
 
     return None
 
@@ -155,20 +150,24 @@ class M3U8StreamDownloader:
         content = resp.text
 
         if '#EXT-X-STREAM-INF' in content:
-            # Master Playlist -> parse sub-playlists and select highest bandwidth
-            best_bandwidth = -1
+            # Master Playlist -> parse sub-playlists and select highest resolution and bandwidth
+            best_score = -1
             best_url = url
             lines = content.splitlines()
             for i, line in enumerate(lines):
                 line = line.strip()
                 if line.startswith('#EXT-X-STREAM-INF'):
-                    m = re.search(r'BANDWIDTH=(\d+)', line)
-                    bw = int(m.group(1)) if m else 0
+                    m_bw = re.search(r'BANDWIDTH=(\d+)', line)
+                    bw = int(m_bw.group(1)) if m_bw else 0
+                    m_res = re.search(r'RESOLUTION=(\d+)x(\d+)', line)
+                    res_val = (int(m_res.group(1)) * int(m_res.group(2))) if m_res else 0
+                    score = (res_val * 1000) + bw
+
                     for j in range(i + 1, len(lines)):
                         sub_line = lines[j].strip()
                         if sub_line and not sub_line.startswith('#'):
-                            if bw > best_bandwidth:
-                                best_bandwidth = bw
+                            if score > best_score:
+                                best_score = score
                                 best_url = urllib.parse.urljoin(url, sub_line)
                             break
             if best_url != url:
@@ -628,6 +627,13 @@ class DownloaderEngine:
     def is_paused(self) -> bool:
         return self._is_paused
 
+    def check_pause(self):
+        """Helper to block while paused, immediately unblocking on cancel."""
+        while self._is_paused and not self._is_cancelled:
+            time.sleep(0.15)
+        if self._is_cancelled:
+            raise CancelledException("Download cancelled by user.")
+
     def set_speed_limit(self, max_kb_s: float):
         self.speed_limit_bytes = int(max_kb_s * 1024)
 
@@ -712,6 +718,12 @@ class DownloaderEngine:
             for idx, img_url in enumerate(images):
                 if not img_url:
                     continue
+                if self._is_cancelled:
+                    raise CancelledException("Download cancelled by user.")
+                while self._is_paused and not self._is_cancelled:
+                    time.sleep(0.2)
+                if self._is_cancelled:
+                    raise CancelledException("Download cancelled by user.")
                 img_name = f"photo_{idx + 1:02d}.jpg"
                 img_path = os.path.join(photos_dir, img_name)
                 try:
@@ -759,8 +771,31 @@ class DownloaderEngine:
             stream_url = data.get('music')
             ext = ".mp3"
         else:
-            stream_url = data.get('hdplay') or data.get('play') or data.get('wmplay')
+            # Prioritize HD 1080p crystal clear stream (hdplay)
+            stream_url = data.get('hdplay')
+            if not stream_url:
+                # Fallback to turbo yt-dlp to extract high-bitrate original camera stream
+                try:
+                    saved_path = self.download_ytdlp(
+                        url=url,
+                        output_dir=output_dir,
+                        quality=quality,
+                        progress_callback=progress_callback
+                    )
+                    return {
+                        'filename': os.path.basename(saved_path),
+                        'path': saved_path,
+                        'size': os.path.getsize(saved_path) if os.path.exists(saved_path) else 0,
+                        'thumbnail': cover_url,
+                        'title': raw_title,
+                        'duration': duration
+                    }
+                except Exception:
+                    stream_url = data.get('play') or data.get('wmplay')
             ext = ".mp4"
+
+        if stream_url and stream_url.startswith('/'):
+            stream_url = f"https://www.tikwm.com{stream_url}"
 
         if not stream_url:
             raise Exception("No valid stream found for TikTok video.")
@@ -967,13 +1002,15 @@ class DownloaderEngine:
             re.search(r'hd_src:"([^"]+)"', html) or 
             re.search(r'"browser_native_hd_url":"([^"]+)"', html) or
             re.search(r'"playable_url_quality_hd":"([^"]+)"', html) or
-            re.search(r'"hd_src_no_ratelimit":"([^"]+)"', html)
+            re.search(r'"hd_src_no_ratelimit":"([^"]+)"', html) or
+            re.search(r'"representation_id":\s*"[^"]*hd[^"]*".*?"base_url":\s*"([^"]+)"', html, re.IGNORECASE)
         )
         sd_match = (
             re.search(r'sd_src:"([^"]+)"', html) or 
             re.search(r'"browser_native_sd_url":"([^"]+)"', html) or
             re.search(r'"playable_url":"([^"]+)"', html) or
-            re.search(r'"sd_src_no_ratelimit":"([^"]+)"', html)
+            re.search(r'"sd_src_no_ratelimit":"([^"]+)"', html) or
+            re.search(r'"representation_id":.*?"base_url":\s*"([^"]+)"', html)
         )
 
         raw_stream = (hd_match.group(1) if hd_match else (sd_match.group(1) if sd_match else ""))
@@ -1062,14 +1099,33 @@ class DownloaderEngine:
             try:
                 tk_res = self.download_tiktok(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
                 return tk_res
-            except Exception:
+            except CancelledException:
+                raise
+            except Exception as e:
+                if self.is_cancelled() or "cancelled" in str(e).lower():
+                    raise CancelledException("Download cancelled by user.")
                 pass
 
         elif 'pinterest.com' in u_lower or 'pin.it' in u_lower or 'pinterest.' in u_lower:
             try:
                 pin_res = self.download_pinterest(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
                 return pin_res
-            except Exception:
+            except CancelledException:
+                raise
+            except Exception as e:
+                if self.is_cancelled() or "cancelled" in str(e).lower():
+                    raise CancelledException("Download cancelled by user.")
+                pass
+
+        elif 'facebook.com' in u_lower or 'fb.watch' in u_lower or 'fb.com' in u_lower:
+            try:
+                fb_res = self.download_facebook(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
+                return fb_res
+            except CancelledException:
+                raise
+            except Exception as e:
+                if self.is_cancelled() or "cancelled" in str(e).lower():
+                    raise CancelledException("Download cancelled by user.")
                 pass
 
         # TIER 2: DIRECT M3U8 / HLS STREAMS
@@ -1095,7 +1151,11 @@ class DownloaderEngine:
                     'thumbnail': '',
                     'title': os.path.basename(save_path)
                 }
-            except Exception:
+            except CancelledException:
+                raise
+            except Exception as e:
+                if self.is_cancelled() or "cancelled" in str(e).lower():
+                    raise CancelledException("Download cancelled by user.")
                 pass
 
         # TIER 3: UNIVERSAL WEBPAGE VIDEO & CHINESE DRAMA SNIFFER
@@ -1138,7 +1198,11 @@ class DownloaderEngine:
                         'thumbnail': st_thumb,
                         'title': st_title
                     }
-            except Exception:
+            except CancelledException:
+                raise
+            except Exception as e:
+                if self.is_cancelled() or "cancelled" in str(e).lower():
+                    raise CancelledException("Download cancelled by user.")
                 pass
 
         # TIER 4: TURBO YT-DLP ENGINE
@@ -1164,7 +1228,11 @@ class DownloaderEngine:
                 'thumbnail': thumb_out,
                 'title': title_out
             }
+        except CancelledException:
+            raise
         except Exception as e_ytdlp:
+            if self.is_cancelled() or "cancelled" in str(e_ytdlp).lower():
+                raise CancelledException("Download cancelled by user.")
             # TIER 5 & 6: DIRECT STREAM RESILIENT HTTP CHUNKER FALLBACK
             try:
                 file_path = self.download_direct_file(
@@ -1179,7 +1247,11 @@ class DownloaderEngine:
                     'thumbnail': '',
                     'title': os.path.basename(file_path)
                 }
-            except Exception:
+            except CancelledException:
+                raise
+            except Exception as e_direct:
+                if self.is_cancelled() or "cancelled" in str(e_direct).lower():
+                    raise CancelledException("Download cancelled by user.")
                 friendly_err = humanize_download_error(str(e_ytdlp))
                 raise Exception(friendly_err)
 
@@ -1194,15 +1266,25 @@ class DownloaderEngine:
             'nocheckcertificate': True,
             'geo_bypass': True,
             'ignoreerrors': False,
-            'retries': 25,
-            'fragment_retries': 25,
-            'skip_unavailable_fragments': True,
+            'retries': 100,
+            'fragment_retries': 100,
+            'skip_unavailable_fragments': False,
             'concurrent_fragment_downloads': 8,
-            'http_chunk_size': 10485760,
+            'socket_timeout': 45,
+            'buffersize': 8388608,
+            'continuedl': True,
+            'windowsfilenames': True,
+            'js_runtimes': {
+                'node': {}
+            },
+            'format_sort': [
+                'res', 'fps',
+                'codec:av01', 'codec:vp9.2', 'codec:vp9', 'codec:h264',
+                'quality', 'vbr', 'abr', 'size', 'br'
+            ],
+            'format_sort_force': True,
+            'prefer_free_formats': False,
             'extractor_args': {
-                'youtube': {
-                    'player_client': ['mweb', 'android', 'ios', 'web']
-                },
                 'tiktok': {
                     'webpage_download': True
                 }
@@ -1217,7 +1299,6 @@ class DownloaderEngine:
         if ffmpeg_dir:
             opts['ffmpeg_location'] = ffmpeg_dir
             opts['merge_output_format'] = 'mp4'
-            opts['format_sort'] = ['res', 'fps', 'codec:h264', 'size', 'br']
 
         if self.browser_cookies and self.browser_cookies.lower() not in ["none", ""]:
             opts['cookiesfrombrowser'] = (self.browser_cookies.lower(),)
@@ -1823,26 +1904,34 @@ class DownloaderEngine:
     ) -> str:
         self.reset_cancel()
         target_dir = get_category_path(output_dir, "video.mp4") if auto_categorize else output_dir
+        try:
+            drive_root = os.path.splitdrive(os.path.abspath(target_dir))[0] + "\\"
+            if os.path.exists(drive_root) and shutil.disk_usage(drive_root).free < 1.0 * 1024 * 1024 * 1024:
+                from utils import get_best_available_drive_folder
+                target_dir = get_best_available_drive_folder("Downloads")
+        except Exception:
+            pass
         os.makedirs(target_dir, exist_ok=True)
 
         ffmpeg_dir = get_ffmpeg_location()
 
         if ffmpeg_dir:
             if quality in ['8k', '4320p']:
-                format_str = 'bestvideo[height<=4320]+bestaudio/best[height<=4320]/best'
+                format_str = 'bestvideo[height<=4320]+bestaudio/bestvideo+bestaudio/best[height<=4320]/best'
             elif quality in ['4k', '2160p']:
-                format_str = 'bestvideo[height<=2160]+bestaudio/best[height<=2160]/best'
+                format_str = 'bestvideo[height<=2160]+bestaudio/bestvideo+bestaudio/best[height<=2160]/best'
             elif quality in ['1440p', '2k']:
-                format_str = 'bestvideo[height<=1440]+bestaudio/best[height<=1440]/best'
+                format_str = 'bestvideo[height<=1440]+bestaudio/bestvideo+bestaudio/best[height<=1440]/best'
             elif quality == '1080p':
-                format_str = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best'
+                format_str = 'bestvideo[height<=1080]+bestaudio/bestvideo+bestaudio/best[height<=1080]/best'
             elif quality == '720p':
-                format_str = 'bestvideo[height<=720]+bestaudio/best[height<=720]/best'
+                format_str = 'bestvideo[height<=720]+bestaudio/bestvideo+bestaudio/best[height<=720]/best'
             elif quality == '480p':
-                format_str = 'bestvideo[height<=480]+bestaudio/best[height<=480]/best'
+                format_str = 'bestvideo[height<=480]+bestaudio/bestvideo+bestaudio/best[height<=480]/best'
             elif quality in ['audio_mp3', 'audio_m4a', 'audio_wav', 'audio_flac', 'audio_opus', 'mp3', 'm4a', 'wav', 'flac']:
-                format_str = 'bestaudio/best'
+                format_str = 'bestaudio[ext=m4a]/bestaudio/best'
             else:
+                # Default / Auto / Best -> maximum available resolution & highest bitrate audio
                 format_str = 'bestvideo+bestaudio/best'
         else:
             if quality in ['8k', '4320p']:
@@ -1860,11 +1949,27 @@ class DownloaderEngine:
             else:
                 format_str = 'best'
 
-        outtmpl = os.path.join(target_dir, '%(title)s.%(ext)s')
+        outtmpl = os.path.join(target_dir, '%(title).160s.%(ext)s')
         _last_hook_time = 0.0
 
         def ytdlp_hook(d):
             nonlocal _last_hook_time
+            if self._is_cancelled:
+                raise CancelledException("Download cancelled by user.")
+
+            while self._is_paused and not self._is_cancelled:
+                if progress_callback:
+                    try:
+                        progress_callback({
+                            'status': 'paused',
+                            'speed': 0,
+                            'eta': 0,
+                            'filename': os.path.basename(d.get('filename', 'video'))
+                        })
+                    except Exception:
+                        pass
+                time.sleep(0.15)
+
             if self._is_cancelled:
                 raise CancelledException("Download cancelled by user.")
 
@@ -1981,6 +2086,8 @@ class DownloaderEngine:
 
                 return filename
         except Exception as e:
+            if self._is_cancelled or "cancelled" in str(e).lower() or isinstance(e, CancelledException):
+                raise CancelledException("Download cancelled by user.")
             err_str = str(e).lower()
             if ("403" in err_str or "forbidden" in err_str or "bot" in err_str) and self.browser_cookies == "none":
                 for fallback_browser in ["chrome", "edge", "firefox", "brave", "opera"]:
@@ -1990,7 +2097,9 @@ class DownloaderEngine:
                             info = ydl_retry.extract_info(url, download=True)
                             if info:
                                 return ydl_retry.prepare_filename(info)
-                    except Exception:
+                    except Exception as e_retry:
+                        if self._is_cancelled or "cancelled" in str(e_retry).lower() or isinstance(e_retry, CancelledException):
+                            raise CancelledException("Download cancelled by user.")
                         continue
             raise
 

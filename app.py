@@ -52,7 +52,8 @@ from utils import (
     play_system_alert_sound,
     play_completion_sound_and_voice,
     get_all_translations,
-    humanize_download_error
+    humanize_download_error,
+    log_download_to_google_sheet
 )
 
 BASE_DIR = get_base_dir()
@@ -140,6 +141,19 @@ class DownloaderApi:
             self.history_items.insert(0, item_record)
             save_history_db(self.history_items)
 
+            # Sync to Google Sheets Cloud Activity Telemetry in background
+            try:
+                log_download_to_google_sheet(
+                    title=item_record.get("filename", "Media File"),
+                    url=item.get("url", ""),
+                    platform=item.get("platform", "Universal"),
+                    quality=item.get("preset", "Default"),
+                    size=item.get("total_str", "HD"),
+                    status="Completed"
+                )
+            except Exception:
+                pass
+
     def _on_scheduler_trigger(self, job: Dict[str, Any]):
         """Callback when a scheduled job triggers."""
         urls = job.get("urls", [])
@@ -206,6 +220,7 @@ class DownloaderApi:
             "sound_mode": self.settings.get("sound_mode", "bell"),
             "sound_alert": self.settings.get("sound_alert", True),
             "update_feed_url": self.settings.get("update_feed_url", ""),
+            "google_sheet_webhook_url": self.settings.get("google_sheet_webhook_url", ""),
             "language": self.settings.get("language", "km"),
             "translations": get_all_translations(),
             "automation": self.automation_settings
@@ -438,6 +453,54 @@ class DownloaderApi:
                 proxy_url=self.settings.get("proxy", "")
             )
         return {"success": True, "settings": self.settings}
+
+    def test_google_sheet_webhook(self, webhook_url: str) -> Dict[str, Any]:
+        """Test sending a ping to the Google Sheets Webhook URL."""
+        import requests
+        import socket
+        from datetime import datetime
+
+        clean_url = str(webhook_url or "").strip()
+        if not clean_url:
+            return {"success": False, "error": "សូមបញ្ចូល Webhook URL របស់ Google Sheet ជាមុនសិន!"}
+
+        if not clean_url.startswith("http://") and not clean_url.startswith("https://"):
+            return {"success": False, "error": "URL មិនត្រឹមត្រូវ! ត្រូវតែផ្ដើមដោយ https://script.google.com/..."}
+
+        try:
+            device_name = socket.gethostname()
+            timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+
+            license_info = ""
+            try:
+                lic_path = get_app_data_path("license.json")
+                if os.path.exists(lic_path):
+                    with open(lic_path, "r", encoding="utf-8") as f:
+                        lic_data = json.load(f)
+                        license_info = lic_data.get("license_key", "") or lic_data.get("plan", "")
+            except Exception:
+                pass
+
+            test_payload = {
+                "timestamp": timestamp,
+                "device": f"{device_name} ({license_info})" if license_info else device_name,
+                "platform": "TEST PING",
+                "title": "តេស្តតំណភ្ជាប់ Google Sheet ជោគជ័យ! ✅",
+                "url": "https://script.google.com",
+                "quality": "1080p Full HD",
+                "size": "15.8 MB",
+                "status": "Verified Connected"
+            }
+            resp = requests.post(clean_url, json=test_payload, timeout=8)
+            if resp.status_code in (200, 201, 302):
+                return {"success": True, "message": "បានតេស្តបញ្ជូនទិន្នន័យទៅកាន់ Google Sheet ជោគជ័យ! (Status 200 OK)"}
+            else:
+                return {"success": False, "error": f"Google Server ឆ្លើយតបកូដ: {resp.status_code}"}
+        except requests.exceptions.Timeout:
+            return {"success": False, "error": "ដាច់ពេល (Timeout)! សូមពិនិត្យមើលអ៊ីនធឺណិត ឬ Web App Deploy Setting។"}
+        except Exception as e:
+            return {"success": False, "error": f"កំហុសក្នុងការតភ្ជាប់: {str(e)}"}
+
 
     # =========================================================================
     # FEATURE 1: DOWNLOAD QUEUE MANAGER API
@@ -781,28 +844,55 @@ class DownloaderApi:
             self.history_items.insert(0, item)
             save_history_db(self.history_items)
 
+            # Sync to Google Sheets Cloud Activity Telemetry in background
+            try:
+                platform_val = (cached_meta.get("platform", "Universal") if isinstance(cached_meta, dict) else "Universal") or "Universal"
+                log_download_to_google_sheet(
+                    title=item.get("filename", "Media File"),
+                    url=url,
+                    platform=platform_val,
+                    quality=preset,
+                    size=item.get("size", "0 MB"),
+                    status="Completed"
+                )
+            except Exception:
+                pass
+
             if self._window:
                 safe_res = json.dumps(res)
                 self._window.evaluate_js(f"window.onDownloadComplete({safe_res});")
 
         except CancelledException:
             if self._window:
-                self._window.evaluate_js("window.onDownloadCancelled();")
+                self._window.evaluate_js("if(window.onDownloadCancelled) window.onDownloadCancelled();")
         except Exception as e:
-            if self._window:
-                user_lang = self.settings.get("language", "km")
-                friendly_msg = humanize_download_error(str(e), lang=user_lang)
-                err_msg = json.dumps(friendly_msg)
-                self._window.evaluate_js(f"window.onDownloadError({err_msg});")
+            if self.downloader.is_cancelled() or "cancelled" in str(e).lower() or isinstance(e, CancelledException):
+                if self._window:
+                    self._window.evaluate_js("if(window.onDownloadCancelled) window.onDownloadCancelled();")
+            else:
+                if self._window:
+                    user_lang = self.settings.get("language", "km")
+                    friendly_msg = humanize_download_error(str(e), lang=user_lang)
+                    err_msg = json.dumps(friendly_msg)
+                    self._window.evaluate_js(f"if(window.onDownloadError) window.onDownloadError({err_msg});")
 
     def toggle_pause(self):
         if getattr(self.downloader, '_is_paused', False):
             self.downloader.resume()
+            new_state = False
         else:
             self.downloader.pause()
+            new_state = True
+        if self._window:
+            safe_state = json.dumps(new_state)
+            self._window.evaluate_js(f"if(window.onDownloadPauseStateChanged) window.onDownloadPauseStateChanged({safe_state});")
+        return {"paused": new_state}
 
     def cancel_download(self):
         self.downloader.cancel()
+        if self._window:
+            self._window.evaluate_js("if(window.onDownloadCancelled) window.onDownloadCancelled();")
+        return {"cancelled": True}
 
     def play_sound_alert(self, mode: str = ""):
         """Play native Windows completion alert sound and voice announcement."""

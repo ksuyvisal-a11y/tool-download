@@ -87,19 +87,22 @@ def root():
 
 # Current Remote Update Feed State
 CURRENT_UPDATE_FEED = {
-    "version": "1.1.0",
-    "title": "SKD TOOL v1.1.0 Release",
-    "release_date": "22 Aug 2026",
+    "version": "1.1.1",
+    "title": "SKD TOOL v1.1.1 Release",
+    "release_date": "11 Sep 2026",
     "mandatory": False,
     "changelog": [
-        "Upgraded 5-Layer CyberGuard Protection",
-        "RSA-2048 Asymmetric Licensing System",
-        "Turbo Multi-Stream Downloader Engine",
-        "Anti-Tamper & Zero-Bypass Watchdog"
+        "Admin Real-Time Sync (Google Sheets & Cloud Database Logging)",
+        "Instant 1-2s Asynchronous Activity Logging (Title, URL, Quality, Size, Device)",
+        "Automated Google Sheets Headers & Formatting Setup",
+        "Added Google Sheets Connection Tester in Settings",
+        "Enhanced Splash Screen Layout & Logo Visibility",
+        "Cleaned up UI Action Buttons & Queue Integration",
+        "Performance & Engine Stability Enhancements"
     ],
-    "download_url": "https://github.com/skd-studio/skd-tool/releases/download/v1.1.0/SKD_TOOL.exe",
+    "download_url": "https://github.com/skd-studio/skd-tool/releases/download/v1.1.1/SKD_TOOL.exe",
     "sha256": "",
-    "file_size": "28.5 MB"
+    "file_size": "108 MB"
 }
 
 

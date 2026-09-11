@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6 (https://jrsoftware.org/isinfo.php)
 
 #define MyAppName "SKD TOOL - Ultimate Media Downloader"
-#define MyAppVersion "1.0.9"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "SKD CyberGuard"
 #define MyAppURL "https://github.com/ksuyvisal-a11y/tool-download"
 #define MyAppExeName "SKD_TOOL.exe"
@@ -23,7 +23,7 @@ DisableProgramGroupPage=yes
 ; The [Icons] "quicklaunchicon" entry uses {userappdata}, but will be used only on Windows Vista and older, but we want universal.
 LicenseFile=
 OutputDir=installer_output
-OutputBaseFilename=SKD_TOOL_Setup_v1.0.9
+OutputBaseFilename=SKD_TOOL_Setup_v1.1.1
 SetupIconFile=assets\app_icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes

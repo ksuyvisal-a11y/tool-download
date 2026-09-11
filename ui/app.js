@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const splashPct = document.getElementById("splashPct");
 
   if (splashScreen && splashBar) {
-    const totalDurationMs = 4500;
+    const totalDurationMs = 5000;
     const intervalMs = 25;
     let elapsedMs = 0;
 
@@ -38,16 +38,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (splashPct) splashPct.innerText = `${Math.round(progress)}%`;
 
       if (splashStatusText) {
-        if (progress < 25) {
-          splashStatusText.innerText = "Initializing SKD CyberGuard Security Shield...";
-        } else if (progress < 50) {
-          splashStatusText.innerText = "Connecting Multi-Stream Multi-Threaded Engine...";
-        } else if (progress < 75) {
-          splashStatusText.innerText = "Loading FFmpeg Transcoder & Audio Decoders...";
-        } else if (progress < 92) {
-          splashStatusText.innerText = "Verifying VIP Cryptographic License...";
+        if (progress < 20) {
+          splashStatusText.innerText = "Initializing Turbo Multi-Stream Engine...";
+        } else if (progress < 42) {
+          splashStatusText.innerText = "Connecting High-Speed Media Decoders...";
+        } else if (progress < 68) {
+          splashStatusText.innerText = "Optimizing Multi-Thread 4K & MP3 Streams...";
+        } else if (progress < 88) {
+          splashStatusText.innerText = "Verifying VIP Security & Storage Vault...";
         } else {
-          splashStatusText.innerText = "Ready! Launching Workspace...";
+          splashStatusText.innerText = "Ready! Launching Studio Workspace...";
         }
       }
 
@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // STATE MANAGEMENT
   // =========================================================================
   let activeTab = "instant";
-  let activeInstantPreset = "auto";
+  let activeInstantPreset = "1080p";
   let isDownloading = false;
   let isPaused = false;
   let lastDownloadedFile = null;
@@ -83,6 +83,20 @@ document.addEventListener("DOMContentLoaded", () => {
     vault: "MEDIA VAULT & ARCHIVE",
     settings: "SYSTEM SETTINGS & PREFERENCES"
   };
+
+  // Conditional Preset Section Visibility (Reveal only when link is pasted/typed)
+  function updatePresetSectionVisibility() {
+    const input = document.getElementById("urlInput");
+    const section = document.getElementById("instantPresetSection");
+    const val = input ? input.value.trim() : "";
+    if (section) {
+      if (val.length > 0) {
+        section.style.display = "flex";
+      } else {
+        section.style.display = "none";
+      }
+    }
+  }
 
   // Workspace Navigation
   function switchTab(tabId) {
@@ -102,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
       titleEl.innerText = workspaceTitles[tabId];
     }
 
+    if (tabId === "instant") updatePresetSectionVisibility();
     if (tabId === "queue") loadQueueItems();
     if (tabId === "vault") loadVaultData();
     if (tabId === "scheduler") loadSchedulerData();
@@ -119,11 +134,26 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================================================================
   // FEATURE 1 & 2: INSTANT DOWNLOADER & SMART LINK ANALYZER
   // =========================================================================
+  let currentLanguage = "km";
+
+  function resetDownloadButtonState() {
+    if (btnDownloadNow) {
+      btnDownloadNow.disabled = false;
+      btnDownloadNow.innerHTML = `<i data-lucide="zap"></i> <span>DOWNLOAD NOW</span>`;
+    }
+    if (btnSmartDownload) {
+      btnSmartDownload.disabled = false;
+      const isKm = (currentLanguage === "km");
+      btnSmartDownload.innerHTML = `<i data-lucide="download"></i> <span id="smartBtnDlText">${isKm ? "ទាញយកឥឡូវនេះ" : "Download Now"}</span>`;
+    }
+    if (window.lucide) lucide.createIcons();
+  }
+
   const urlInput = document.getElementById("urlInput");
   const btnPaste = document.getElementById("btnPaste");
   const btnClearUrl = document.getElementById("btnClearUrl");
   const btnDownloadNow = document.getElementById("btnDownloadNow");
-  const btnInstantAddToQueue = document.getElementById("btnInstantAddToQueue");
+  const btnInstantAddToQueue = document.getElementById("btnInstantAddToQueue") || document.getElementById("btnAddToQueue");
   const platformDetectBadge = document.getElementById("platformDetectBadge");
   const smartAnalyzerCard = document.getElementById("smartAnalyzerCard");
   const smartThumbImg = document.getElementById("smartThumbImg");
@@ -135,6 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const smartSizeText = document.getElementById("smartSizeText");
   const btnSmartDownload = document.getElementById("btnSmartDownload");
   const btnSmartAddQueue = document.getElementById("btnSmartAddQueue");
+  updatePresetSectionVisibility();
 
   const qualityCards = document.querySelectorAll(".quality-card");
   qualityCards.forEach(card => {
@@ -142,19 +173,6 @@ document.addEventListener("DOMContentLoaded", () => {
       qualityCards.forEach(c => c.classList.remove("active"));
       card.classList.add("active");
       activeInstantPreset = card.getAttribute("data-preset");
-    });
-  });
-
-  // Smart Format Buttons in Preview Card
-  document.querySelectorAll(".smart-fmt-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".smart-fmt-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      activeInstantPreset = btn.getAttribute("data-fmt");
-      // Sync with preset cards
-      qualityCards.forEach(c => {
-        c.classList.toggle("active", c.getAttribute("data-preset") === activeInstantPreset);
-      });
     });
   });
 
@@ -172,10 +190,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Live URL Debounced Inspection
   let inspectTimeout = null;
   async function triggerUrlInspection() {
+    updatePresetSectionVisibility();
     const url = urlInput ? urlInput.value.trim() : "";
     if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
       if (platformDetectBadge) {
         platformDetectBadge.innerText = "ANALYZING...";
+      }
+      if (smartAnalyzerCard) {
+        smartAnalyzerCard.style.display = "block";
       }
       clearTimeout(inspectTimeout);
       inspectTimeout = setTimeout(async () => {
@@ -220,12 +242,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (urlInput) {
-    urlInput.addEventListener("input", triggerUrlInspection);
+    urlInput.addEventListener("input", () => {
+      updatePresetSectionVisibility();
+      triggerUrlInspection();
+    });
     urlInput.addEventListener("paste", () => {
       setTimeout(() => {
+        updatePresetSectionVisibility();
         triggerUrlInspection();
         if (typeof showToast === "function") showToast("✓ Link Pasted!");
       }, 60);
+    });
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleInstantDownload();
+      }
     });
   }
 
@@ -271,6 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
       urlInput.value = txt;
       urlInput.dispatchEvent(new Event("input", { bubbles: true }));
       urlInput.dispatchEvent(new Event("change", { bubbles: true }));
+      updatePresetSectionVisibility();
       triggerUrlInspection();
       urlInput.focus();
       if (typeof showToast === "function") {
@@ -296,6 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
       urlInput.value = "";
       if (smartAnalyzerCard) smartAnalyzerCard.style.display = "none";
       if (platformDetectBadge) platformDetectBadge.innerText = "AUTO-DETECT";
+      updatePresetSectionVisibility();
     });
   }
 
@@ -480,9 +514,19 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    btnDownloadNow.disabled = true;
-    btnDownloadNow.innerHTML = `<i data-lucide="loader"></i> <span>CONNECTING...</span>`;
+    if (btnDownloadNow) {
+      btnDownloadNow.disabled = true;
+      btnDownloadNow.innerHTML = `<i data-lucide="loader"></i> <span>CONNECTING...</span>`;
+    }
+    if (btnSmartDownload) {
+      btnSmartDownload.disabled = true;
+      const connTxt = (currentLanguage === "km") ? "កំពុងភ្ជាប់..." : "CONNECTING...";
+      btnSmartDownload.innerHTML = `<i data-lucide="loader" class="spin"></i> <span id="smartBtnDlText">${connTxt}</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
     isDownloading = true;
+    isPaused = false;
+    updatePauseUI(false);
 
     const transferCard = document.getElementById("transferCard");
     const transferControlsActive = document.getElementById("transferControlsActive");
@@ -491,12 +535,30 @@ document.addEventListener("DOMContentLoaded", () => {
     if (transferControlsActive) transferControlsActive.style.display = "flex";
     if (transferControlsCompleted) transferControlsCompleted.style.display = "none";
 
+    const btnPause = document.getElementById("btnPause");
+    const btnStop = document.getElementById("btnStop");
+    if (btnPause) {
+      btnPause.disabled = false;
+      btnPause.classList.remove("is-paused");
+      btnPause.title = "Pause download";
+      btnPause.innerHTML = `<i data-lucide="pause"></i> <span id="lblPause">Pause</span>`;
+    }
+    const btnClearVideo = document.getElementById("btnClearVideo") || document.getElementById("btnStop");
+    if (btnClearVideo) {
+      btnClearVideo.disabled = false;
+      btnClearVideo.innerHTML = `<i data-lucide="trash-2"></i> <span>Clear Video</span>`;
+    }
+
     const mediaTitleText = document.getElementById("mediaTitleText");
     const mediaSubText = document.getElementById("mediaSubText");
     const progressBarFill = document.getElementById("progressBarFill");
     if (mediaTitleText) mediaTitleText.innerText = smartAnalyzedInfo ? smartAnalyzedInfo.title : "Connecting to Stream Server...";
     if (mediaSubText) mediaSubText.innerText = url;
-    if (progressBarFill) progressBarFill.style.width = "4%";
+    if (progressBarFill) {
+      progressBarFill.style.width = "4%";
+      progressBarFill.style.background = "";
+      progressBarFill.classList.remove("paused-bar");
+    }
 
     if (smartAnalyzedInfo && smartAnalyzedInfo.thumbnail) {
       const mediaThumbImg = document.getElementById("mediaThumbImg");
@@ -587,6 +649,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast("✓ Added to Download Queue!");
         urlInput.value = "";
         if (smartAnalyzerCard) smartAnalyzerCard.style.display = "none";
+        updatePresetSectionVisibility();
         loadQueueItems();
       }
     }
@@ -595,17 +658,103 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnInstantAddToQueue) btnInstantAddToQueue.addEventListener("click", handleInstantAddToQueue);
   if (btnSmartAddQueue) btnSmartAddQueue.addEventListener("click", handleInstantAddToQueue);
 
-  // Instant Pause / Stop Handlers
+  // Instant Pause / Stop Handlers & State Sync
+  function updatePauseUI(paused) {
+    isPaused = !!paused;
+    const btnPause = document.getElementById("btnPause");
+    const progressBarFill = document.getElementById("progressBarFill");
+    const metricSpeed = document.getElementById("metricSpeed");
+    const metricEta = document.getElementById("metricEta");
+    const mediaSubText = document.getElementById("mediaSubText");
+
+    if (btnPause) {
+      if (isPaused) {
+        btnPause.classList.add("is-paused");
+        btnPause.title = "Resume download";
+        btnPause.innerHTML = `<i data-lucide="play"></i> <span id="lblPause">Resume</span>`;
+        if (progressBarFill) {
+          progressBarFill.classList.add("paused-bar");
+        }
+        if (metricSpeed) metricSpeed.innerText = "Speed: Paused (0 KB/s)";
+        if (metricEta) metricEta.innerText = "ETA: Paused";
+        if (mediaSubText) {
+          if (!mediaSubText.getAttribute("data-original-sub")) {
+            mediaSubText.setAttribute("data-original-sub", mediaSubText.innerText);
+          }
+          mediaSubText.innerText = "⏸️ Download paused — Click Resume to continue";
+        }
+      } else {
+        btnPause.classList.remove("is-paused");
+        btnPause.title = "Pause download";
+        btnPause.innerHTML = `<i data-lucide="pause"></i> <span id="lblPause">Pause</span>`;
+        if (progressBarFill) {
+          progressBarFill.classList.remove("paused-bar");
+        }
+        if (mediaSubText && mediaSubText.getAttribute("data-original-sub")) {
+          mediaSubText.innerText = mediaSubText.getAttribute("data-original-sub");
+          mediaSubText.removeAttribute("data-original-sub");
+        }
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  window.onDownloadPauseStateChanged = function(paused) {
+    updatePauseUI(paused);
+  };
+
   const btnPause = document.getElementById("btnPause");
-  const btnStop = document.getElementById("btnStop");
+  const btnClearVideo = document.getElementById("btnClearVideo") || document.getElementById("btnStop");
+
   if (btnPause) {
     btnPause.addEventListener("click", () => {
-      if (window.pywebview && window.pywebview.api) window.pywebview.api.toggle_pause();
+      if (!isDownloading) return;
+      isPaused = !isPaused;
+      updatePauseUI(isPaused);
+      if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.toggle_pause();
+      }
     });
   }
-  if (btnStop) {
-    btnStop.addEventListener("click", () => {
-      if (window.pywebview && window.pywebview.api) window.pywebview.api.cancel_download();
+
+  if (btnClearVideo) {
+    btnClearVideo.addEventListener("click", () => {
+      // 1. Cancel background download if active
+      if (isDownloading && window.pywebview && window.pywebview.api) {
+        window.pywebview.api.cancel_download();
+      }
+
+      // 2. Reset states
+      isDownloading = false;
+      isPaused = false;
+      updatePauseUI(false);
+
+      // 3. Cleanly dismiss/hide the transfer card
+      const transferCard = document.getElementById("transferCard");
+      if (transferCard) {
+        transferCard.style.display = "none";
+      }
+
+      // 4. Re-enable Download Now button
+      resetDownloadButtonState();
+
+      // 5. Reset progress bar & metrics
+      const progressBarFill = document.getElementById("progressBarFill");
+      if (progressBarFill) {
+        progressBarFill.style.width = "0%";
+        progressBarFill.style.background = "";
+        progressBarFill.classList.remove("paused-bar");
+      }
+      const metricSpeed = document.getElementById("metricSpeed");
+      const metricEta = document.getElementById("metricEta");
+      const metricSizePercent = document.getElementById("metricSizePercent");
+      if (metricSpeed) metricSpeed.innerText = "Speed: 0 KB/s";
+      if (metricEta) metricEta.innerText = "ETA: --:--";
+      if (metricSizePercent) metricSizePercent.innerText = "0 MB / 0 MB (0.0%)";
+
+      // 6. Provide brief feedback
+      showToast("✓ Video cleared");
+      if (window.lucide) lucide.createIcons();
     });
   }
 
@@ -670,7 +819,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function playCyberChime() {
+  function playModernChime() {
     try {
       const ctx = getOrCreateAudioContext();
       if (!ctx) return;
@@ -702,7 +851,7 @@ document.addEventListener("DOMContentLoaded", () => {
         osc.stop(now + n.time + n.dur);
       });
     } catch (e) {
-      console.log("Cyber chime error:", e);
+      console.log("Modern chime error:", e);
     }
   }
 
@@ -744,7 +893,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.pywebview.api.play_sound_alert(userSoundMode || "bell");
     } else {
       if (userSoundMode === "chime") {
-        playCyberChime();
+        playModernChime();
       } else {
         playBellChime();
       }
@@ -753,6 +902,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Python Global Callbacks for Instant Downloader
   window.updateDownloadProgress = function(data) {
+    if (isPaused) return; // Freeze progress text while paused
+
     const transferCard = document.getElementById("transferCard");
     const progressBarFill = document.getElementById("progressBarFill");
     const metricSpeed = document.getElementById("metricSpeed");
@@ -776,11 +927,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.onDownloadComplete = function(res) {
     isDownloading = false;
+    isPaused = false;
+    updatePauseUI(false);
     lastDownloadedFile = res;
-    if (btnDownloadNow) {
-      btnDownloadNow.disabled = false;
-      btnDownloadNow.innerHTML = `<i data-lucide="zap"></i> <span>DOWNLOAD NOW</span>`;
+
+    resetDownloadButtonState();
+
+    const btnClearVideo = document.getElementById("btnClearVideo") || document.getElementById("btnStop");
+    if (btnClearVideo) {
+      btnClearVideo.disabled = false;
+      btnClearVideo.innerHTML = `<i data-lucide="trash-2"></i> <span>Clear Video</span>`;
     }
+
     const transferControlsActive = document.getElementById("transferControlsActive");
     const transferControlsCompleted = document.getElementById("transferControlsCompleted");
     if (transferControlsActive) transferControlsActive.style.display = "none";
@@ -789,7 +947,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const mediaTitleText = document.getElementById("mediaTitleText");
     const mediaSubText = document.getElementById("mediaSubText");
     const progressBarFill = document.getElementById("progressBarFill");
-    if (progressBarFill) progressBarFill.style.width = "100%";
+    if (progressBarFill) {
+      progressBarFill.classList.remove("paused-bar");
+      progressBarFill.style.width = "100%";
+      progressBarFill.style.background = "";
+    }
     if (mediaTitleText) mediaTitleText.innerText = `✓ Download Complete: ${res.filename || 'Media File'}`;
     if (mediaSubText) mediaSubText.innerText = `Saved to: ${res.path || 'Downloads folder'}`;
 
@@ -802,18 +964,32 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   window.onDownloadError = function(err) {
-    isDownloading = false;
-    lastDownloadedFile = null;
-    if (btnDownloadNow) {
-      btnDownloadNow.disabled = false;
-      btnDownloadNow.innerHTML = `<i data-lucide="zap"></i> <span>DOWNLOAD NOW</span>`;
+    // If cancelled by user, redirect cleanly to onDownloadCancelled
+    if (err && (err.toLowerCase().includes("cancelled") || err.toLowerCase().includes("stopped"))) {
+      window.onDownloadCancelled();
+      return;
     }
+
+    isDownloading = false;
+    isPaused = false;
+    updatePauseUI(false);
+    lastDownloadedFile = null;
+
+    resetDownloadButtonState();
+
+    const btnClearVideo = document.getElementById("btnClearVideo") || document.getElementById("btnStop");
+    if (btnClearVideo) {
+      btnClearVideo.disabled = false;
+      btnClearVideo.innerHTML = `<i data-lucide="trash-2"></i> <span>Clear Video</span>`;
+    }
+
     const mediaTitleText = document.getElementById("mediaTitleText");
     const mediaSubText = document.getElementById("mediaSubText");
     const progressBarFill = document.getElementById("progressBarFill");
     if (mediaTitleText) mediaTitleText.innerText = "❌ Download Failed";
     if (mediaSubText) mediaSubText.innerText = `${err || 'Error downloading media'}`;
     if (progressBarFill) {
+      progressBarFill.classList.remove("paused-bar");
       progressBarFill.style.width = "100%";
       progressBarFill.style.background = "#EF4444";
     }
@@ -822,12 +998,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.onDownloadCancelled = function() {
     isDownloading = false;
-    if (btnDownloadNow) {
-      btnDownloadNow.disabled = false;
-      btnDownloadNow.innerHTML = `<i data-lucide="zap"></i> <span>DOWNLOAD NOW</span>`;
+    isPaused = false;
+    updatePauseUI(false);
+
+    resetDownloadButtonState();
+
+    const btnClearVideo = document.getElementById("btnClearVideo") || document.getElementById("btnStop");
+    if (btnClearVideo) {
+      btnClearVideo.disabled = false;
+      btnClearVideo.innerHTML = `<i data-lucide="trash-2"></i> <span>Clear Video</span>`;
     }
+
     const mediaTitleText = document.getElementById("mediaTitleText");
-    if (mediaTitleText) mediaTitleText.innerText = "⏹️ Download Cancelled";
+    const mediaSubText = document.getElementById("mediaSubText");
+    const progressBarFill = document.getElementById("progressBarFill");
+    const metricSpeed = document.getElementById("metricSpeed");
+    const metricEta = document.getElementById("metricEta");
+
+    if (mediaTitleText) mediaTitleText.innerText = "⏹️ Download Stopped";
+    if (mediaSubText) mediaSubText.innerText = "Download stopped by user. Temporary files cleared.";
+    if (progressBarFill) {
+      progressBarFill.classList.remove("paused-bar");
+      progressBarFill.style.background = "#64748B";
+    }
+    if (metricSpeed) metricSpeed.innerText = "Speed: 0 KB/s";
+    if (metricEta) metricEta.innerText = "ETA: --:--";
+
+    if (window.lucide) lucide.createIcons();
   };
 
   // =========================================================================
@@ -1530,48 +1727,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Floating Clipboard Sniffer Toast
-  const clipboardToast = document.getElementById("clipboardToast");
-  const clipboardToastUrl = document.getElementById("clipboardToastUrl");
-  const btnToastDownload = document.getElementById("btnToastDownload");
-  const btnToastQueue = document.getElementById("btnToastQueue");
-  const btnToastClose = document.getElementById("btnToastClose");
-  let detectedClipboardUrl = "";
-
+  // Floating Clipboard Sniffer Toast (Disabled / Removed)
   window.onClipboardMediaDetected = function(url) {
-    detectedClipboardUrl = url;
-    if (clipboardToast && clipboardToastUrl) {
-      clipboardToastUrl.innerText = url;
-      clipboardToast.style.display = "flex";
-    }
+    // Popup toast disabled as requested
   };
-
-  if (btnToastClose && clipboardToast) {
-    btnToastClose.addEventListener("click", () => {
-      clipboardToast.style.display = "none";
-    });
-  }
-  if (btnToastDownload) {
-    btnToastDownload.addEventListener("click", () => {
-      if (detectedClipboardUrl) {
-        if (urlInput) urlInput.value = detectedClipboardUrl;
-        triggerUrlInspection();
-        switchTab("instant");
-        if (clipboardToast) clipboardToast.style.display = "none";
-        handleInstantDownload();
-      }
-    });
-  }
-  if (btnToastQueue) {
-    btnToastQueue.addEventListener("click", async () => {
-      if (detectedClipboardUrl && window.pywebview && window.pywebview.api) {
-        await window.pywebview.api.queue_add_items([{ url: detectedClipboardUrl, preset: "1080p" }]);
-        if (clipboardToast) clipboardToast.style.display = "none";
-        showToast("✓ Added to Download Queue!");
-        loadQueueItems();
-      }
-    });
-  }
 
   // Shutdown Countdown Modal Handlers
   const shutdownModal = document.getElementById("shutdownModal");
@@ -1926,14 +2085,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Global Delete File
-  window.deleteMediaItem = async function(filePath, fileName) {
-    document.querySelectorAll(".recent-dropdown-menu.active").forEach(m => m.classList.remove("active"));
-    if (!filePath) return;
-    const displayName = fileName || filePath.split('\\').pop() || 'Media File';
-    const confirmMsg = `តើអ្នកពិតជាចង់លុប Video នេះចេញពីកុំព្យូទ័ររបស់អ្នកមែនទេ?\n\n📁 File: ${displayName}\n\n⚠️ ការលុបនេះនឹងលុប File ចេញពី Hard Disk និងចេញពីបញ្ជី History ភ្លាមៗ!`;
-    
-    if (confirm(confirmMsg)) {
+  // Global Delete File - Compact Modern Modal
+  let pendingDeleteFilePath = null;
+  let pendingDeleteFileName = null;
+
+  const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+  const deleteModalFileName = document.getElementById("deleteModalFileName");
+  const btnCloseDeleteModal = document.getElementById("btnCloseDeleteModal");
+  const btnCancelDeleteModal = document.getElementById("btnCancelDeleteModal");
+  const btnConfirmDeleteModal = document.getElementById("btnConfirmDeleteModal");
+
+  function closeDeleteModal() {
+    if (deleteConfirmModal) deleteConfirmModal.style.display = "none";
+    pendingDeleteFilePath = null;
+    pendingDeleteFileName = null;
+  }
+
+  if (btnCloseDeleteModal) btnCloseDeleteModal.addEventListener("click", closeDeleteModal);
+  if (btnCancelDeleteModal) btnCancelDeleteModal.addEventListener("click", closeDeleteModal);
+  if (deleteConfirmModal) {
+    deleteConfirmModal.addEventListener("click", (e) => {
+      if (e.target === deleteConfirmModal) closeDeleteModal();
+    });
+  }
+
+  if (btnConfirmDeleteModal) {
+    btnConfirmDeleteModal.addEventListener("click", async () => {
+      const filePath = pendingDeleteFilePath;
+      const displayName = pendingDeleteFileName;
+      closeDeleteModal();
+      if (!filePath) return;
+
       if (window.pywebview && window.pywebview.api) {
         try {
           const res = await window.pywebview.api.delete_history_item(filePath, true);
@@ -1945,13 +2127,29 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             await loadRecentDownloads();
             await loadVaultData();
+            showToast("✓ File deleted successfully");
           } else {
-            alert(`Failed to delete file: ${res ? res.error : 'Unknown error'}`);
+            showToast(`⚠️ Delete failed: ${res ? res.error : 'Unknown error'}`);
           }
         } catch (err) {
-          alert(`Error deleting file: ${err}`);
+          showToast(`⚠️ Error: ${err}`);
         }
       }
+    });
+  }
+
+  window.deleteMediaItem = function(filePath, fileName) {
+    document.querySelectorAll(".recent-dropdown-menu.active").forEach(m => m.classList.remove("active"));
+    if (!filePath) return;
+    pendingDeleteFilePath = filePath;
+    pendingDeleteFileName = fileName || filePath.split('\\').pop() || 'Media File';
+
+    if (deleteModalFileName) {
+      deleteModalFileName.innerText = pendingDeleteFileName;
+    }
+    if (deleteConfirmModal) {
+      deleteConfirmModal.style.display = "flex";
+      if (window.lucide) lucide.createIcons();
     }
   };
 
@@ -2077,6 +2275,72 @@ document.addEventListener("DOMContentLoaded", () => {
   const settingSpeedLimit = document.getElementById("settingSpeedLimit");
   const settingCookies = document.getElementById("settingCookies");
   const btnSaveSettings = document.getElementById("btnSaveSettings");
+  const settingGoogleSheetUrl = document.getElementById("settingGoogleSheetUrl");
+  const btnTestGoogleSheet = document.getElementById("btnTestGoogleSheet");
+  const googleSheetTestStatus = document.getElementById("googleSheetTestStatus");
+  const btnOpenSheetGuide = document.getElementById("btnOpenSheetGuide");
+  const sheetGuideModal = document.getElementById("sheetGuideModal");
+  const btnCloseSheetGuideModal = document.getElementById("btnCloseSheetGuideModal");
+  const btnDoneSheetGuide = document.getElementById("btnDoneSheetGuide");
+  const btnCopySheetScript = document.getElementById("btnCopySheetScript");
+  const lblCopySheetScript = document.getElementById("lblCopySheetScript");
+  const codeSheetScript = document.getElementById("codeSheetScript");
+
+  const googleAppsScriptCode = `// Google Apps Script Webhook for SKD Tool Telemetry
+function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getActiveSheet();
+
+    // Auto-setup headers if sheet is empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        "Timestamp (កាលបរិច្ឆេទ)",
+        "Device / License (ម៉ាស៊ីន/កូដ)",
+        "Platform (វេទិកា)",
+        "Video Title (ចំណងជើង)",
+        "URL (តំណភ្ជាប់)",
+        "Quality (កម្រិត)",
+        "File Size (ទំហំ)",
+        "Status (ស្ថានភាព)"
+      ]);
+      sheet.getRange(1, 1, 1, 8).setFontWeight("bold").setBackground("#0f172a").setFontColor("#38bdf8");
+      sheet.setFrozenRows(1);
+    }
+
+    var data = {};
+    if (e.postData && e.postData.contents) {
+      try {
+        data = JSON.parse(e.postData.contents);
+      } catch (err) {
+        data = e.parameter || {};
+      }
+    } else {
+      data = e.parameter || {};
+    }
+
+    sheet.appendRow([
+      data.timestamp || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss"),
+      data.device || "Unknown Device",
+      data.platform || "Universal",
+      data.title || "Media File",
+      data.url || "",
+      data.quality || "Default",
+      data.size || "Unknown",
+      data.status || "Completed"
+    ]);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      message: "Data logged successfully"
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
 
   if (btnBrowseFolder) {
     btnBrowseFolder.addEventListener("click", async () => {
@@ -2098,6 +2362,7 @@ document.addEventListener("DOMContentLoaded", () => {
         sound_mode: settingSoundMode ? settingSoundMode.value : userSoundMode,
         sound_alert: isSoundAlertEnabled,
         update_feed_url: settingUpdateUrl ? settingUpdateUrl.value.trim() : "",
+        google_sheet_webhook_url: settingGoogleSheetUrl ? settingGoogleSheetUrl.value.trim() : "",
         language: settingLanguage ? settingLanguage.value : currentLanguage
       };
       if (settingSoundMode) {
@@ -2110,6 +2375,112 @@ document.addEventListener("DOMContentLoaded", () => {
       if (window.pywebview && window.pywebview.api) {
         await window.pywebview.api.save_settings(payload);
         showToast("✓ Settings & Preferences Saved!");
+      }
+    });
+  }
+
+  // Google Sheets Webhook Test Button
+  if (btnTestGoogleSheet) {
+    btnTestGoogleSheet.addEventListener("click", async () => {
+      const url = settingGoogleSheetUrl ? settingGoogleSheetUrl.value.trim() : "";
+      if (!url) {
+        showToast("⚠️ សូមបញ្ចូល Webhook URL របស់ Google Sheet ជាមុនសិន!");
+        if (googleSheetTestStatus) {
+          googleSheetTestStatus.style.display = "block";
+          googleSheetTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
+          googleSheetTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.35)";
+          googleSheetTestStatus.style.color = "#f87171";
+          googleSheetTestStatus.innerHTML = "⚠️ សូមបញ្ចូល Webhook URL របស់ Google Sheet ជាមុនសិន!";
+        }
+        return;
+      }
+
+      // Also persist URL immediately
+      if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.save_settings({ google_sheet_webhook_url: url });
+      }
+
+      btnTestGoogleSheet.disabled = true;
+      btnTestGoogleSheet.innerHTML = `<i data-lucide="loader-2" class="spin"></i> <span>កំពុងតេស្ត...</span>`;
+      if (window.lucide) lucide.createIcons();
+
+      if (googleSheetTestStatus) {
+        googleSheetTestStatus.style.display = "block";
+        googleSheetTestStatus.style.background = "rgba(6, 182, 212, 0.15)";
+        googleSheetTestStatus.style.border = "1px solid rgba(6, 182, 212, 0.35)";
+        googleSheetTestStatus.style.color = "#38bdf8";
+        googleSheetTestStatus.innerHTML = "កំពុងបញ្ជូនទិន្នន័យតេស្តទៅកាន់ Google Sheet...";
+      }
+
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.test_google_sheet_webhook) {
+          const res = await window.pywebview.api.test_google_sheet_webhook(url);
+          if (res && res.success) {
+            if (googleSheetTestStatus) {
+              googleSheetTestStatus.style.background = "rgba(16, 185, 129, 0.15)";
+              googleSheetTestStatus.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+              googleSheetTestStatus.style.color = "#34d399";
+              googleSheetTestStatus.innerHTML = `✅ <strong>ជោគជ័យ!</strong> ${res.message || "ទិន្នន័យបានរត់ចូល Google Sheet ភ្លាមៗ (Status 200 OK)!"}`;
+            }
+            showToast("✓ ភ្ជាប់ Google Sheet ជោគជ័យ!");
+          } else {
+            if (googleSheetTestStatus) {
+              googleSheetTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
+              googleSheetTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+              googleSheetTestStatus.style.color = "#f87171";
+              googleSheetTestStatus.innerHTML = `❌ <strong>បរាជ័យ:</strong> ${res.error || "មិនអាចតភ្ជាប់ទៅកាន់ Webhook បានទេ"}`;
+            }
+            showToast("✕ ការតភ្ជាប់បរាជ័យ!");
+          }
+        }
+      } catch (err) {
+        if (googleSheetTestStatus) {
+          googleSheetTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
+          googleSheetTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+          googleSheetTestStatus.style.color = "#f87171";
+          googleSheetTestStatus.innerHTML = `❌ កំហុស: ${err.message || err}`;
+        }
+      } finally {
+        btnTestGoogleSheet.disabled = false;
+        btnTestGoogleSheet.innerHTML = `<i data-lucide="zap"></i> <span>តេស្តភ្ជាប់ (Test)</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+    });
+  }
+
+  // Google Sheets Guide Modal & Copy Script
+  if (btnOpenSheetGuide) {
+    btnOpenSheetGuide.addEventListener("click", () => {
+      if (codeSheetScript) codeSheetScript.textContent = googleAppsScriptCode;
+      if (sheetGuideModal) sheetGuideModal.style.display = "flex";
+      if (window.lucide) lucide.createIcons();
+    });
+  }
+  if (btnCloseSheetGuideModal) {
+    btnCloseSheetGuideModal.addEventListener("click", () => {
+      if (sheetGuideModal) sheetGuideModal.style.display = "none";
+    });
+  }
+  if (btnDoneSheetGuide) {
+    btnDoneSheetGuide.addEventListener("click", () => {
+      if (sheetGuideModal) sheetGuideModal.style.display = "none";
+    });
+  }
+  if (btnCopySheetScript) {
+    btnCopySheetScript.addEventListener("click", async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(googleAppsScriptCode);
+        } else if (window.pywebview && window.pywebview.api && window.pywebview.api.set_clipboard) {
+          await window.pywebview.api.set_clipboard(googleAppsScriptCode);
+        }
+        if (lblCopySheetScript) lblCopySheetScript.innerText = "បានចម្លងរួចរាល់! ✓";
+        showToast("✓ បានចម្លងកូដ Google Apps Script រួចរាល់!");
+        setTimeout(() => {
+          if (lblCopySheetScript) lblCopySheetScript.innerText = "ចម្លងកូដ (Copy Code)";
+        }, 2500);
+      } catch (err) {
+        showToast("Error copying code: " + err);
       }
     });
   }
@@ -2225,13 +2596,26 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (res && res.has_update) {
-        // Show Top Bar badge
+        currentUpdatePackage = res;
+        // Show Top Bar badge with glowing pulse
         if (btnTopBarUpdate) {
           btnTopBarUpdate.style.display = "inline-flex";
-          if (topBarUpdateLabel) topBarUpdateLabel.innerText = `v${res.latest_version} Update Available`;
+          const isKm = (typeof currentLanguage !== 'undefined' && currentLanguage === "km");
+          if (topBarUpdateLabel) {
+            topBarUpdateLabel.innerText = isKm 
+              ? `v${res.latest_version} មានកំណែថ្មី` 
+              : `v${res.latest_version} Update Available`;
+          }
         }
-        renderUpdateModal(res);
+        if (isManual) {
+          renderUpdateModal(res);
+        }
       } else {
+        currentUpdatePackage = null;
+        // Hide Top Bar badge completely if up to date or already updated
+        if (btnTopBarUpdate) {
+          btnTopBarUpdate.style.display = "none";
+        }
         if (isManual) {
           if (res && res.error) {
             alert(`Update Check: ${res.error}`);
@@ -2342,6 +2726,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (updateProgPct) updateProgPct.innerText = "100%";
       if (updateProgBarFill) updateProgBarFill.style.width = "100%";
       if (updateProgSpeed) updateProgSpeed.innerText = "Verified SHA-256 Checksum! Applying update...";
+
+      if (btnTopBarUpdate) {
+        btnTopBarUpdate.style.display = "none";
+      }
 
       if (btnApplyUpdate) {
         btnApplyUpdate.disabled = true;
@@ -2455,7 +2843,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================================================================
   // DUAL LANGUAGE LOCALIZATION (ភាសាខ្មែរ 🇰🇭 / English 🇺🇸)
   // =========================================================================
-  let currentLanguage = "km";
   let allTranslations = {};
 
   function applyLanguage(lang) {
@@ -2506,6 +2893,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnDownloadNow) {
       const span = btnDownloadNow.querySelector("span");
       if (span) span.innerText = isKm ? "ទាញយកឥឡូវនេះ" : "DOWNLOAD NOW";
+    }
+    const smartBtnDlText = document.getElementById("smartBtnDlText");
+    if (smartBtnDlText) {
+      smartBtnDlText.innerText = isKm ? "ទាញយកឥឡូវនេះ" : "Download Now";
+    }
+    const smartBtnQueueText = document.getElementById("smartBtnQueueText");
+    if (smartBtnQueueText) {
+      smartBtnQueueText.innerText = isKm ? "+ បន្ថែមក្នុងជួរ" : "+ Add to Queue";
+    }
+    const smartBtnCoverText = document.getElementById("smartBtnCoverText");
+    if (smartBtnCoverText) {
+      smartBtnCoverText.innerText = isKm ? "រូបភាព HD" : "HD Cover";
+    }
+    if (topBarUpdateLabel && currentUpdatePackage && currentUpdatePackage.latest_version) {
+      topBarUpdateLabel.innerText = isKm 
+        ? `v${currentUpdatePackage.latest_version} មានកំណែថ្មី` 
+        : `v${currentUpdatePackage.latest_version} Update Available`;
     }
     const btnPaste = document.getElementById("btnPaste");
     if (btnPaste) {
@@ -2582,6 +2986,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  const topBtnFolder = document.getElementById("topBtnFolder");
+  if (topBtnFolder) {
+    topBtnFolder.addEventListener("click", () => {
+      if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.open_save_folder();
+      }
+    });
+  }
+
   const settingLanguage = document.getElementById("settingLanguage");
   if (settingLanguage) {
     settingLanguage.addEventListener("change", () => {
@@ -2629,6 +3042,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (settingUpdateUrl && info.update_feed_url) {
         settingUpdateUrl.value = info.update_feed_url;
       }
+      if (settingGoogleSheetUrl && info.google_sheet_webhook_url) {
+        settingGoogleSheetUrl.value = info.google_sheet_webhook_url;
+      }
 
       isAppLicensed = true;
       showActiveLicenseView();
@@ -2639,10 +3055,10 @@ document.addEventListener("DOMContentLoaded", () => {
     loadQueueItems();
     loadSchedulerData();
 
-    // Auto-check for remote software updates after launch (delayed 3.5s for smooth startup)
+    // Auto-check for remote software updates after launch
     setTimeout(() => {
       checkAppUpdates(false);
-    }, 3500);
+    }, 1200);
   });
 
 });

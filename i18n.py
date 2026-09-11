@@ -10,7 +10,7 @@ from typing import Dict, Any
 TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "en": {
         "app_title": "SKD Tool Pro - Studio Edition",
-        "app_subtitle": "PRO ULTRA v1.0.9",
+        "app_subtitle": "PRO ULTRA v1.1.1",
         "nav_downloader": "Downloader",
         "nav_playlist": "Playlist Extractor",
         "nav_queue": "Batch Queue",
@@ -155,7 +155,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     },
     "km": {
         "app_title": "SKD Tool Pro - កំណែទំនើប",
-        "app_subtitle": "PRO ULTRA v1.0.9",
+        "app_subtitle": "PRO ULTRA v1.1.1",
         "nav_downloader": "ទាញយក (Main)",
         "nav_playlist": "Playlist វីដេអូ",
         "nav_queue": "តម្រង់ជួរ (Queue)",

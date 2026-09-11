@@ -1,16 +1,24 @@
-# ⚡ SKD TOOL - Ultimate Media Downloader & Studio v1.0.9 (Standalone .exe & Installer Edition)
+# ⚡ SKD TOOL - Ultimate Media Downloader & Studio v1.1.1 (Standalone .exe & Installer Edition)
 
-កម្មវិធី Download Tool ជំនាន់ថ្មីកម្រិត VIP របស់ **SKD TOOL v1.0.9** ដែលភ្ជាប់មកជាមួយ **Standalone Windows .exe (មិនចាំបាច់មាន Python)**, **ប្រព័ន្ធប្តូរភាសាពេញលេញ (ភាសាខ្មែរ 🇰🇭 / English 🇺🇸)**, **In-App Media Player ចាក់វីដេអូ & ស្តាប់ភ្លេងផ្ទាល់ក្នុង Tool**, **Video to GIF Maker**, **Audio Volume Booster**, **TikTok Photos Carousel Downloader**, **HD Cover/Thumbnail Downloader**, **Universal License Auto-Sync (Never loses license on updates)**, ព្រមទាំង **ប្រព័ន្ធការពារ License Key & HWID Machine Locking** ពេញលេញ។
+កម្មវិធី Download Tool ជំនាន់ថ្មីកម្រិត VIP របស់ **SKD TOOL v1.1.1** ដែលភ្ជាប់មកជាមួយ **Standalone Windows .exe (មិនចាំបាច់មាន Python)**, **7 Workspaces ពេញលេញ (Instant Downloader, Download Queue, Batch & Playlist, Video Converter & Studio, Scheduler & Automation, Media Vault, System Settings)**, **Admin Real-Time Cloud Activity Sync (Google Sheets / Database 1-2s)**, **ប្រព័ន្ធប្តូរភាសាពេញលេញ (ភាសាខ្មែរ 🇰🇭 / English 🇺🇸)**, **In-App Media Player ចាក់វីដេអូ & ស្តាប់ភ្លេងផ្ទាល់ក្នុង Tool**, **Video to GIF Maker**, **Audio Volume Booster (150%, 200%, 300%)**, **TikTok Photos Carousel Downloader**, **HD Cover/Thumbnail Downloader**, **Universal License Auto-Sync (Never loses license on updates)**, ព្រមទាំង **ប្រព័ន្ធការពារ License Key & HWID Machine Locking** ពេញលេញ។
 
 ---
 
-## 🌟 មុខងារពិសេសៗក្នុងជំនាន់ v1.0.9 (What's New in v1.0.9)
+## 🌟 មុខងារពិសេសៗក្នុងជំនាន់ v1.1.1 (What's New in v1.1.1)
 
-1. **⭐ Auto-Detect Best Resolution:** ស្វ័យប្រវត្តិចាប់យកកម្រិតច្បាស់បំផុត (4K UHD / 1080p 60fps) ភ្លាមៗពេល Paste Link។
-2. **🎬 TikTok 1080p Original No-Watermark:** ទាញយកកម្រិត HD Original ភ្លឺច្បាស់ 100% គ្មានជាប់ Logo។
-3. **🛡️ Zero-Error Remux Shield:** FFmpeg 7.1 Lossless Remux ធានាការ Merge Stream បានជោគជ័យឥតខ្ចោះ។
-4. **🚀 Facebook & Instagram Ultra HD:** ចាប់យក Stream កម្រិតច្បាស់ HD មុនគេជានិច្ច។
-5. **⚡ Micro-Patch Turbo 2.2 MB:** Update លឿនត្រឹម 0.2 វិនាទី មិនគាំងកុំព្យូទ័រ។
+1. **📊 Admin Real-Time Tracking (Google Sheets / Database):** កត់ត្រាាល់រាល់សកម្មភាព Download របស់ User ចូល Google Sheet ភ្លាមៗ (១-២ វិនាទី) ដោយស្វ័យប្រវត្តិ។
+2. **⚡ Automated Google Sheets Headers & Setup:** បង្កើតក្បាលតារាង (Headers) ស្វ័យប្រវត្តិតាមរយៈ Google Apps Script Webhook មិនបាច់រៀបចំ Columns មុនឡើយ។
+3. **🧪 One-Click Google Sheets Webhook Tester:** មានប៊ូតុងតេស្តតំណភ្ជាប់ Webhook ផ្ទាល់ចេញពី Settings។
+4. **🎨 Redesigned 5.0s Cinematic Splash:** ផ្ទាំង Splash Card Glassmorphism ស្អាតបាត Logo ធំច្បាស់ និង Progress រលូន។
+5. **🎯 Unified Action Buttons:** រៀបចំប៊ូតុងសកម្មភាព (Add to Queue) ចូលក្នុងកាត Preview យ៉ាងស្អាតបាត។
+6. **⚡ 7 Complete Workspaces:** បន្ថែមផ្ទាំងគ្រប់គ្រងពេញលេញទាំង ៧ (ទាញយកភ្លាមៗ, តម្រង់ជួរ Batch Queue, Playlist Extractor, Video Converter, កំណត់ម៉ោងទាញយក & បិទកុំព្យូទ័រ Scheduler, ឃ្លាំងផ្ទុក Media Vault, ការកំណត់ Settings)។
+7. **🎬 Studio Converter & Volume Booster:** បំលែងវីដេអូទៅជា MP4/MKV/WebM/GIF និងកាត់សំឡេង MP3 320k Studio រួមទាំង Boost សំឡេងដល់ 300%។
+8. **🛡️ YouTube Anti-Bot & Throttling Bypass:** បន្ថែមប្រព័ន្ធបង្វិល Client (iOS/Android/mWeb) ការពារ Error 403 និងទាញយកល្បឿនអតិបរមា។
+9. **⭐ Auto-Detect Best Resolution:** ស្វ័យប្រវត្តិចាប់យកកម្រិតច្បាស់បំផុត (4K UHD / 1080p 60fps) ភ្លាមៗពេល Paste Link។
+10. **🎬 TikTok 1080p Original No-Watermark:** ទាញយកកម្រិត HD Original ភ្លឺច្បាស់ 100% គ្មានជាប់ Logo។
+11. **🛡️ Zero-Error Remux Shield:** FFmpeg 7.1 Lossless Remux ធានាការ Merge Stream បានជោគជ័យឥតខ្ចោះ។
+12. **🚀 Facebook & Instagram Ultra HD:** ចាប់យក Stream កម្រិតច្បាស់ HD មុនគេជានិច្ច។
+13. **⚡ Micro-Patch Turbo 2.4 MB:** Update លឿនត្រឹម 0.2 វិនាទី មិនគាំងកុំព្យូទ័រ។
 
 ---
 
@@ -30,7 +38,7 @@
 ### វិធីទី ៣ (បង្កើត Installer Wizard Setup .exe តាម Inno Setup)៖
 - ដំឡើងកម្មវិធី [Inno Setup 6](https://jrsoftware.org/isinfo.php)
 - បើក file **[installer_setup.iss](installer_setup.iss)** រួចចុច Compile (Ctrl + F9)
-- នឹងទទួលបាន Setup Installer ឈ្មោះ SKD_TOOL_Setup_v1.0.8.exe នៅក្នុង folder installer_output/ សម្រាប់ផ្ញើឲ្យគេដំឡើង (Install) មាន icon លើ Desktop និង Start Menu!
+- នឹងទទួលបាន Setup Installer ឈ្មោះ SKD_TOOL_Setup_v1.1.1.exe នៅក្នុង folder installer_output/ សម្រាប់ផ្ញើឲ្យគេដំឡើង (Install) មាន icon លើ Desktop និង Start Menu!
 
 ---
 
