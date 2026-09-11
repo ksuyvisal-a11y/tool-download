@@ -105,7 +105,7 @@ def create_micro_patch():
     update_data["type"] = "patch"
     update_data["file_size"] = patch_size_str
     update_data["sha256"] = patch_hash
-    update_data["download_url"] = f"https://github.com/ksuyvisal-gmail-com/tool-download/releases/download/{ver}/patch.zip"
+    update_data["download_url"] = f"https://github.com/ksuyvisal-a11y/tool-download/releases/download/{ver}/patch.zip"
 
     with open(update_json_path, 'w', encoding='utf-8') as f:
         json.dump(update_data, f, indent=2, ensure_ascii=False)
