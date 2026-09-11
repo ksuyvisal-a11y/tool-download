@@ -71,6 +71,7 @@ def generate_armored_bootstrapper(encrypted_modules: Dict[str, str], entrypoint_
     code = f'''# -*- coding: utf-8 -*-
 # Protected by SKD CyberGuard Enterprise Code Armor V2 (Anti-Decompile Shield)
 # All intellectual property, algorithms, and business logic are encrypted in-memory.
+import os
 import sys
 import types
 import base64
@@ -78,6 +79,12 @@ import marshal
 import zlib
 import hashlib
 import importlib.machinery
+
+# Micro-Patch directory priority
+_appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
+_patch_dir = os.path.join(_appdata, "SKD_Tool", "patches")
+if os.path.exists(_patch_dir) and _patch_dir not in sys.path:
+    sys.path.insert(0, _patch_dir)
 
 {sym_salt} = {salt_repr}
 {sym_payloads} = {payloads_repr}
@@ -108,6 +115,11 @@ class {sym_loader_cls}:
 
 class {sym_finder_cls}:
     def find_spec(self, _fullname, _path, _target=None):
+        # Allow live micro-patches in %APPDATA%/SKD_Tool/patches to take priority
+        if os.path.exists(_patch_dir):
+            _p_file = os.path.join(_patch_dir, f"{{_fullname}}.py")
+            if os.path.exists(_p_file):
+                return None
         if _fullname in {sym_payloads}:
             _c = {sym_decrypt}({sym_payloads}[_fullname], _fullname)
             _ldr = {sym_loader_cls}(_fullname, _c)
@@ -119,11 +131,20 @@ sys.meta_path.insert(0, {sym_finder_cls}())
 
 # Execute encrypted entrypoint
 if __name__ == "__main__":
-    {sym_entry_code} = {sym_decrypt}({sym_payloads}[{entry_repr}], {entry_repr})
-    _main_mod = types.ModuleType("__main__")
-    _main_mod.__file__ = "<skd_main_protected>"
-    sys.modules["__main__"] = _main_mod
-    exec({sym_entry_code}, _main_mod.__dict__)
+    _p_app = os.path.join(_patch_dir, "app.py") if os.path.exists(_patch_dir) else None
+    if _p_app and os.path.exists(_p_app):
+        with open(_p_app, "r", encoding="utf-8") as _f:
+            _app_code = compile(_f.read(), _p_app, "exec")
+        _main_mod = types.ModuleType("__main__")
+        _main_mod.__file__ = _p_app
+        sys.modules["__main__"] = _main_mod
+        exec(_app_code, _main_mod.__dict__)
+    else:
+        {sym_entry_code} = {sym_decrypt}({sym_payloads}[{entry_repr}], {entry_repr})
+        _main_mod = types.ModuleType("__main__")
+        _main_mod.__file__ = "<skd_main_protected>"
+        sys.modules["__main__"] = _main_mod
+        exec({sym_entry_code}, _main_mod.__dict__)
 '''
     return code
 

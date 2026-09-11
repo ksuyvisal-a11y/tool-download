@@ -409,11 +409,23 @@ class UpdateEngine:
         if is_micro_patch:
             # INSTANT ZERO-FREEZE RESTART FOR MICRO-PATCH
             if sys.platform == "win32":
+                clean_env = os.environ.copy()
+                clean_env.pop('_MEIPASS2', None)
+                clean_env.pop('_MEIPASS', None)
+
                 if current_exe:
-                    subprocess.Popen([current_exe], creationflags=detach_flags, cwd=get_base_dir())
+                    # Clean detached restart: delay 1s to allow parent PyInstaller process to delete its temp _MEI folder cleanly without 'Failed to remove temporary directory' warning
+                    bat_path = os.path.join(tempfile.gettempdir(), f"skd_restart_{int(time.time())}.bat")
+                    with open(bat_path, "w", encoding="utf-8") as f:
+                        f.write(f"""@echo off
+ping 127.0.0.1 -n 2 >nul
+start "" "{current_exe}"
+del "%~f0" >nul 2>&1
+""")
+                    subprocess.Popen(["cmd.exe", "/c", bat_path], creationflags=detach_flags, cwd=get_base_dir(), env=clean_env, close_fds=True)
                 else:
                     script_main = os.path.abspath(sys.argv[0])
-                    subprocess.Popen([sys.executable, script_main], creationflags=detach_flags, cwd=get_base_dir())
+                    subprocess.Popen([sys.executable, script_main], creationflags=detach_flags, cwd=get_base_dir(), env=clean_env, close_fds=True)
             else:
                 subprocess.Popen([sys.executable] + sys.argv, cwd=get_base_dir())
 
