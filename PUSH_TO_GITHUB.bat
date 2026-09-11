@@ -19,6 +19,8 @@ if %errorlevel% neq 0 (
 "%GIT_CMD%" add .
 "%GIT_CMD%" commit -m "Update: %date% %time%"
 "%GIT_CMD%" push -u origin main
+"%GIT_CMD%" push a11y main
+"%GIT_CMD%" push --tags a11y
 
 echo.
 echo ========================================
