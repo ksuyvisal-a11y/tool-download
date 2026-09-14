@@ -1,10 +1,10 @@
-# ⚡ SKD TOOL - Ultimate Media Downloader & Studio v1.1.1 (Standalone .exe & Installer Edition)
+# ⚡ SKD TOOL - Ultimate Media Downloader & Studio v1.1.2 (Standalone .exe & Installer Edition)
 
-កម្មវិធី Download Tool ជំនាន់ថ្មីកម្រិត VIP របស់ **SKD TOOL v1.1.1** ដែលភ្ជាប់មកជាមួយ **Standalone Windows .exe (មិនចាំបាច់មាន Python)**, **7 Workspaces ពេញលេញ (Instant Downloader, Download Queue, Batch & Playlist, Video Converter & Studio, Scheduler & Automation, Media Vault, System Settings)**, **Admin Real-Time Cloud Activity Sync (Google Sheets / Database 1-2s)**, **ប្រព័ន្ធប្តូរភាសាពេញលេញ (ភាសាខ្មែរ 🇰🇭 / English 🇺🇸)**, **In-App Media Player ចាក់វីដេអូ & ស្តាប់ភ្លេងផ្ទាល់ក្នុង Tool**, **Video to GIF Maker**, **Audio Volume Booster (150%, 200%, 300%)**, **TikTok Photos Carousel Downloader**, **HD Cover/Thumbnail Downloader**, **Universal License Auto-Sync (Never loses license on updates)**, ព្រមទាំង **ប្រព័ន្ធការពារ License Key & HWID Machine Locking** ពេញលេញ។
+កម្មវិធី Download Tool ជំនាន់ថ្មីកម្រិត VIP របស់ **SKD TOOL v1.1.2** ដែលភ្ជាប់មកជាមួយ **Standalone Windows .exe (មិនចាំបាច់មាន Python)**, **7 Workspaces ពេញលេញ (Instant Downloader, Download Queue, Batch & Playlist, Video Converter & Studio, Scheduler & Automation, Media Vault, System Settings)**, **TikTok Short Drama Engine (ទាញយករឿងភាគ TikTok)**, **Admin Real-Time Cloud Activity Sync (Google Sheets / Database 1-2s)**, **ប្រព័ន្ធប្តូរភាសាពេញលេញ (ភាសាខ្មែរ 🇰🇭 / English 🇺🇸)**, **In-App Media Player ចាក់វីដេអូ & ស្តាប់ភ្លេងផ្ទាល់ក្នុង Tool**, **Video to GIF Maker**, **Audio Volume Booster (150%, 200%, 300%)**, **TikTok Photos Carousel Downloader**, **HD Cover/Thumbnail Downloader**, **Universal License Auto-Sync (Never loses license on updates)**, ព្រមទាំង **ប្រព័ន្ធការពារ License Key & HWID Machine Locking** ពេញលេញ។
 
 ---
 
-## 🌟 មុខងារពិសេសៗក្នុងជំនាន់ v1.1.1 (What's New in v1.1.1)
+## 🌟 មុខងារពិសេសៗក្នុងជំនាន់ v1.1.2 (What's New in v1.1.2)
 
 1. **📊 Admin Real-Time Tracking (Google Sheets / Database):** កត់ត្រាាល់រាល់សកម្មភាព Download របស់ User ចូល Google Sheet ភ្លាមៗ (១-២ វិនាទី) ដោយស្វ័យប្រវត្តិ។
 2. **⚡ Automated Google Sheets Headers & Setup:** បង្កើតក្បាលតារាង (Headers) ស្វ័យប្រវត្តិតាមរយៈ Google Apps Script Webhook មិនបាច់រៀបចំ Columns មុនឡើយ។
@@ -38,7 +38,7 @@
 ### វិធីទី ៣ (បង្កើត Installer Wizard Setup .exe តាម Inno Setup)៖
 - ដំឡើងកម្មវិធី [Inno Setup 6](https://jrsoftware.org/isinfo.php)
 - បើក file **[installer_setup.iss](installer_setup.iss)** រួចចុច Compile (Ctrl + F9)
-- នឹងទទួលបាន Setup Installer ឈ្មោះ SKD_TOOL_Setup_v1.1.1.exe នៅក្នុង folder installer_output/ សម្រាប់ផ្ញើឲ្យគេដំឡើង (Install) មាន icon លើ Desktop និង Start Menu!
+- នឹងទទួលបាន Setup Installer ឈ្មោះ SKD_TOOL_Setup_v1.1.2.exe នៅក្នុង folder installer_output/ សម្រាប់ផ្ញើឲ្យគេដំឡើង (Install) មាន icon លើ Desktop និង Start Menu!
 
 ---
 

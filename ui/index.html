@@ -68,7 +68,7 @@
       <!-- Bottom Micro-Badge -->
       <div class="splash-bottom-pill">
         <span class="splash-live-dot"></span>
-        <span>ENTERPRISE MEDIA SUITE • v1.1.1</span>
+        <span>ENTERPRISE MEDIA SUITE • v1.1.2</span>
       </div>
 
     </div>
@@ -204,7 +204,7 @@
               <div class="hero-sub-status">
                 <div class="sub-status-pill">
                   <span class="status-dot-solid"></span>
-                  <span>⚡ High-Speed Engine • 1000+ Platforms Supported</span>
+                  <span id="heroEngineStatus">⚡ Ultra Multi-Tier Engine • 1000+ Platforms Supported</span>
                 </div>
               </div>
             </div>
@@ -421,6 +421,17 @@
               </button>
               <button class="btn-control-icon-dismiss" id="btnCompletedDismiss" title="Dismiss">
                 <i data-lucide="x"></i>
+              </button>
+            </div>
+
+            <div class="transfer-controls transfer-controls-done transfer-controls-error" id="transferControlsError" style="display: none;">
+              <button class="btn-control btn-completed-play btn-retry-download" id="btnErrorRetry" title="Retry download with auto-healing">
+                <i data-lucide="rotate-cw"></i>
+                <span id="lblErrorRetry">Retry</span>
+              </button>
+              <button class="btn-control btn-clear-video" id="btnErrorDismiss" title="Dismiss error">
+                <i data-lucide="x"></i>
+                <span id="lblErrorDismiss">Dismiss</span>
               </button>
             </div>
           </div>
@@ -1026,36 +1037,7 @@
             </div>
           </div>
 
-          <!-- Cloud Database & Google Sheets Telemetry Card -->
-          <div class="card" style="margin-top: 12px; border: 1px solid rgba(16, 185, 129, 0.3); background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(6, 78, 59, 0.15));">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 9px; background: rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; color: #10b981; font-size: 1.2rem;">
-                  <i data-lucide="file-spreadsheet"></i>
-                </div>
-                <div>
-                  <h3 style="margin: 0; font-size: 0.96rem; font-weight: 600; color: #f8fafc;">Admin Real-Time Sync (Google Sheets / Database)</h3>
-                  <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: #94a3b8;">ទិន្នន័យ Download រត់ចូល Google Sheet ភ្លាមៗ (១-២ វិនាទី) សម្រាប់ Admin តាមដាន</p>
-                </div>
-              </div>
-              <button type="button" class="btn-secondary" id="btnOpenSheetGuide" style="padding: 6px 12px; font-size: 0.78rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-                <i data-lucide="help-circle"></i>
-                <span>របៀបបង្កើត Google Sheet Webhook</span>
-              </button>
-            </div>
 
-            <div class="setting-row">
-              <label for="settingGoogleSheetUrl">Google Apps Script Webhook URL (POST):</label>
-              <div class="input-with-btn">
-                <input type="text" id="settingGoogleSheetUrl" placeholder="https://script.google.com/macros/s/.../exec">
-                <button type="button" class="btn-secondary" id="btnTestGoogleSheet" style="min-width: 145px; font-size: 0.8rem; border-color: rgba(16, 185, 129, 0.45); color: #34d399; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                  <i data-lucide="zap"></i>
-                  <span>តេស្តភ្ជាប់ (Test)</span>
-                </button>
-              </div>
-              <div id="googleSheetTestStatus" style="display: none; margin-top: 8px; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem;"></div>
-            </div>
-          </div>
 
           <!-- Version & Update Card -->
           <div class="card" style="margin-top: 12px;">
@@ -1064,7 +1046,7 @@
               <div class="version-status-row">
                 <div class="version-badge-big">
                   <i data-lucide="shield-check" class="text-cyan"></i>
-                  <span id="settingCurrentVerText">Version 1.1.1 (Official Stable)</span>
+                  <span id="settingCurrentVerText">Version 1.1.2 (Official Stable)</span>
                 </div>
                 <button class="btn-secondary" id="btnCheckUpdateManual">
                   <i data-lucide="rotate-cw"></i>
@@ -1199,7 +1181,7 @@
       </div>
 
       <div class="version-diff-bar">
-        <div class="ver-pill ver-current">Current: <span id="lblCurrentVer">v1.1.1</span></div>
+        <div class="ver-pill ver-current">Current: <span id="lblCurrentVer">v1.1.2</span></div>
         <i data-lucide="arrow-right" class="ver-arrow"></i>
         <div class="ver-pill ver-latest">Latest: <span id="lblLatestVer">v1.2.0</span></div>
       </div>
@@ -1383,54 +1365,7 @@
     </div>
   </div>
 
-  <!-- ======================================================================= -->
-  <!-- GOOGLE SHEETS WEBHOOK SETUP GUIDE MODAL                                  -->
-  <!-- ======================================================================= -->
-  <div class="modal-overlay" id="sheetGuideModal" style="display:none;">
-    <div class="modal-card" style="max-width: 680px; width: 92%; max-height: 88vh; overflow-y: auto; padding: 22px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 36px; height: 36px; border-radius: 9px; background: rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; color: #10b981;">
-            <i data-lucide="file-spreadsheet"></i>
-          </div>
-          <div>
-            <h2 style="margin: 0; font-size: 1.05rem; font-weight: 600; color: #f8fafc;">ការតម្លើង Google Sheets Cloud Tracking</h2>
-            <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: #94a3b8;">ទិន្នន័យ Download រត់ចូលតារាង Google Sheet ភ្លាមៗ (១-២ វិនាទី)</p>
-          </div>
-        </div>
-        <button class="modal-close-btn" id="btnCloseSheetGuideModal" title="Close">✕</button>
-      </div>
 
-      <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.6;">
-        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
-          <strong style="color: #34d399;">💡 ជំហានងាយៗ ៣ នាទី៖</strong>
-          <ol style="margin: 8px 0 0 18px; padding: 0;">
-            <li>ចូលទៅកាន់ <strong>sheets.new</strong> ដើម្បីបង្កើត Google Sheet ថ្មីទទេមួយ</li>
-            <li>ចុចលើ Menu <strong>Extensions (ផ្នែកបន្ថែម)</strong> ➔ ជ្រើសរើស <strong>Apps Script</strong></li>
-            <li>លុបកូដចាស់ទាំងអស់ចេញ រួចចុចប៊ូតុង <strong>"ចម្លងកូដ Google Apps Script"</strong> ខាងក្រោមយកទៅ Paste ចូល</li>
-            <li>ចុចប៊ូតុងពណ៌ខៀវ <strong>Deploy</strong> (ខាងលើស្ដាំ) ➔ <strong>New deployment</strong></li>
-            <li>ចុចលើរូបកង់ Settings ⚙️ ➔ ជ្រើសរើស <strong>Web app</strong></li>
-            <li>ត្រង់ប្រអប់ <strong>Who has access</strong> ➔ ប្ដូរទៅជា <strong>Anyone</strong> (សំខាន់បំផុត!)</li>
-            <li>ចុច <strong>Deploy</strong> ➔ ចម្លងយក <strong>Web app URL</strong> រួចយកមក Paste ក្នុង Tool ហើយចុច Save & Test!</li>
-          </ol>
-        </div>
-
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-          <span style="font-weight: 600; color: #f1f5f9; font-size: 0.82rem;">កូដ Google Apps Script (Auto Headers & Instant Logging):</span>
-          <button type="button" class="btn-secondary" id="btnCopySheetScript" style="padding: 5px 12px; font-size: 0.76rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: flex; align-items: center; gap: 5px;">
-            <i data-lucide="copy"></i>
-            <span id="lblCopySheetScript">ចម្លងកូដ (Copy Code)</span>
-          </button>
-        </div>
-
-        <pre id="codeSheetScript" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-size: 0.74rem; color: #a5f3fc; overflow-x: auto; max-height: 220px; font-family: Consolas, monospace; line-height: 1.4; user-select: all;"></pre>
-      </div>
-
-      <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
-        <button class="btn-download-primary" id="btnDoneSheetGuide" style="padding: 8px 20px; font-size: 0.85rem;">យល់ព្រម (Done)</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Custom Context Menu for Right-Click Interaction -->
   <div id="customContextMenu" class="custom-context-menu" style="display: none;">

@@ -1,10 +1,10 @@
 import os
 import sys
 
-# Inject persistent patch directory at top priority for zero-freeze micro-patches
+# Inject persistent patch directory at top priority for zero-freeze micro-patches (frozen .exe only)
 _appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
 _patch_dir = os.path.join(_appdata, "SKD_Tool", "patches")
-if os.path.exists(_patch_dir) and _patch_dir not in sys.path:
+if getattr(sys, 'frozen', False) and os.path.exists(_patch_dir) and _patch_dir not in sys.path:
     sys.path.insert(0, _patch_dir)
 
 import json
@@ -53,7 +53,8 @@ from utils import (
     play_completion_sound_and_voice,
     get_all_translations,
     humanize_download_error,
-    log_download_to_google_sheet
+    log_download_to_google_sheet,
+    get_device_and_user_identity
 )
 
 BASE_DIR = get_base_dir()
@@ -93,6 +94,7 @@ class DownloaderApi:
         # Clipboard sniffer state & thread safety lock
         self._clip_lock = threading.Lock()
         self._last_clipboard = ""
+        self._last_download_request: Dict[str, Any] = {}
         self._clipboard_thread = threading.Thread(target=self._clipboard_watcher_loop, daemon=True)
         self._clipboard_thread.start()
 
@@ -468,22 +470,12 @@ class DownloaderApi:
             return {"success": False, "error": "URL មិនត្រឹមត្រូវ! ត្រូវតែផ្ដើមដោយ https://script.google.com/..."}
 
         try:
-            device_name = socket.gethostname()
+            device_str = get_device_and_user_identity()
             timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
-
-            license_info = ""
-            try:
-                lic_path = get_app_data_path("license.json")
-                if os.path.exists(lic_path):
-                    with open(lic_path, "r", encoding="utf-8") as f:
-                        lic_data = json.load(f)
-                        license_info = lic_data.get("license_key", "") or lic_data.get("plan", "")
-            except Exception:
-                pass
 
             test_payload = {
                 "timestamp": timestamp,
-                "device": f"{device_name} ({license_info})" if license_info else device_name,
+                "device": device_str,
                 "platform": "TEST PING",
                 "title": "តេស្តតំណភ្ជាប់ Google Sheet ជោគជ័យ! ✅",
                 "url": "https://script.google.com",
@@ -722,7 +714,20 @@ class DownloaderApi:
     def start_download(self, url: str, preset: str, options: dict):
         """Start downloading in a dedicated background thread with lifetime VIP status."""
         self.is_licensed = True
+        self._last_download_request = {
+            "url": url,
+            "preset": preset,
+            "options": options
+        }
         threading.Thread(target=self._download_worker, args=(url, preset, options), daemon=True).start()
+
+    def retry_last_download(self) -> Dict[str, Any]:
+        """Retry the last attempted download with the same parameters."""
+        if self._last_download_request and self._last_download_request.get("url"):
+            req = self._last_download_request
+            self.start_download(req["url"], req.get("preset", "1080p"), req.get("options", {}))
+            return {"success": True, "status": "retrying"}
+        return {"success": False, "error": "No previous download to retry."}
 
     def _download_worker(self, url: str, preset: str, options: dict):
         cached_meta = {'thumbnail': '', 'title': '', 'duration': 0}
@@ -733,6 +738,7 @@ class DownloaderApi:
                 cached_meta['thumbnail'] = meta.get('thumbnail', '')
                 cached_meta['title'] = meta.get('title', '')
                 cached_meta['duration'] = meta.get('duration', 0)
+                cached_meta['platform'] = meta.get('platform', '')
                 if self._window and cached_meta['thumbnail']:
                     dur_sec = cached_meta['duration']
                     dur_str = f"{int(dur_sec//60):02d}:{int(dur_sec%60):02d}" if dur_sec > 0 else "00:00"
@@ -873,7 +879,8 @@ class DownloaderApi:
                 if self._window:
                     user_lang = self.settings.get("language", "km")
                     friendly_msg = humanize_download_error(str(e), lang=user_lang)
-                    err_msg = json.dumps(friendly_msg)
+                    err_data = {"error": friendly_msg, "url": url, "preset": preset}
+                    err_msg = json.dumps(err_data)
                     self._window.evaluate_js(f"if(window.onDownloadError) window.onDownloadError({err_msg});")
 
     def toggle_pause(self):

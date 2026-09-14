@@ -1,19 +1,18 @@
 {
-  "version": "1.1.1",
-  "title": "SKD TOOL v1.1.1 (Admin Real-Time Cloud Telemetry & Google Sheets Logging)",
-  "release_date": "11 Sep 2026",
+  "version": "1.1.2",
+  "title": "SKD TOOL v1.1.2 (TikTok Short Drama Engine & Clean Minimalist UI)",
+  "release_date": "14 Sep 2026",
   "mandatory": false,
   "changelog": [
-    "📊 Admin Real-Time Tracking: Instant 1-2s Google Sheets & Cloud Database Logging",
-    "⚡ Automated Google Sheets Headers & Formatting Setup (Zero Manual Config)",
-    "🧪 One-Click Google Sheets Webhook Connection Tester in System Settings",
-    "🎨 Redesigned Splash Screen (5.0s Glassmorphism with Enlarged Logo & Smooth Progress)",
-    "🎯 Streamlined UI Layout: Integrated Action Buttons directly into Preview Cards",
-    "🛡️ YouTube, TikTok, Facebook & Universal Multi-Stream Engine Optimization",
-    "🚀 Zero-Freeze Micro-Patch Engine: Ultra-fast hotfix updates in 0.2 seconds"
+    "🎬 TikTok Short Drama Engine: Direct Episode Extractor with Full Metadata & Video Feeds",
+    "🍪 Custom Browser Cookies Integration: Auto-load cookies.txt for Unlocked Drama & VIP Content",
+    "🎨 Streamlined Clean UI: Removed duplicate top download buttons for a clean, clutter-free workspace",
+    "🛡️ Smart Error Handling & Auto-Recovery: Suppressed raw console errors with Khmer guided status prompts",
+    "⚡ Multi-Platform Optimization: Faster download handshakes for YouTube, Facebook, TikTok & Douyin",
+    "🚀 Zero-Freeze Micro-Patch Engine v1.1.2"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.1.1/patch.zip",
-  "sha256": "0ba8c17cadc33ab34bc608a8e301fa10b2848df8bfba55a9600fb6c8fc9320a3",
-  "file_size": "2.24 MB",
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.1.2/patch.zip",
+  "sha256": "9f7fd1f45e9f6378a9ab62bf5e4f65e9d869cec958b5c2eb5bb6fec9738b0f33",
+  "file_size": "2.25 MB",
   "type": "patch"
 }

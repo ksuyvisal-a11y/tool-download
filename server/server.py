@@ -87,22 +87,20 @@ def root():
 
 # Current Remote Update Feed State
 CURRENT_UPDATE_FEED = {
-    "version": "1.1.1",
-    "title": "SKD TOOL v1.1.1 Release",
-    "release_date": "11 Sep 2026",
+    "version": "1.1.2",
+    "title": "SKD TOOL v1.1.2 Release",
+    "release_date": "14 Sep 2026",
     "mandatory": False,
     "changelog": [
+        "TikTok Short Drama Engine: Direct Sniffer & Authenticated Cookies Support",
+        "Streamlined Workspace UI: Removed redundant top buttons for cleaner layout",
+        "Smart Error Auto-Healing & Khmer Status Guidance",
         "Admin Real-Time Sync (Google Sheets & Cloud Database Logging)",
-        "Instant 1-2s Asynchronous Activity Logging (Title, URL, Quality, Size, Device)",
-        "Automated Google Sheets Headers & Formatting Setup",
-        "Added Google Sheets Connection Tester in Settings",
-        "Enhanced Splash Screen Layout & Logo Visibility",
-        "Cleaned up UI Action Buttons & Queue Integration",
-        "Performance & Engine Stability Enhancements"
+        "Zero-Freeze Micro-Patch Engine v1.1.2"
     ],
-    "download_url": "https://github.com/skd-studio/skd-tool/releases/download/v1.1.1/SKD_TOOL.exe",
+    "download_url": "https://github.com/skd-studio/skd-tool/releases/download/v1.1.2/SKD_TOOL.exe",
     "sha256": "",
-    "file_size": "108 MB"
+    "file_size": "2.2 MB"
 }
 
 

@@ -61,6 +61,19 @@ USER_AGENTS = [
     'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
 ]
 
+
+class YtDlpQuietLogger:
+    """Redirects yt-dlp internal logging away from sys.stderr/stdout to prevent console pollution."""
+    def debug(self, msg):
+        pass
+    def info(self, msg):
+        pass
+    def warning(self, msg):
+        pass
+    def error(self, msg):
+        pass
+
+
 def get_ffmpeg_location() -> Optional[str]:
     """Dynamically locate FFmpeg binary via imageio_ffmpeg, bundled assets, or system PATH."""
     try:
@@ -499,6 +512,96 @@ class UniversalWebSniffer:
     def __init__(self, proxy: str = ""):
         self.proxy = proxy
 
+    @staticmethod
+    def _unpack_dean_edwards(text: str) -> str:
+        """Unpack eval(function(p,a,c,k,e,d)...) obfuscated JavaScript on drama sites."""
+        unpacked_all = []
+        matches = re.findall(
+            r"eval\s*\(\s*function\s*\(\s*p\s*,\s*a\s*,\s*c\s*,\s*k\s*,\s*e\s*,\s*d\s*\)\s*\{.*?\}\s*\(\s*'(.*?)'\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*'(.*?)'\.split\('\|'\)",
+            text, re.DOTALL
+        )
+        if not matches:
+            matches = re.findall(
+                r"\}\s*\(\s*'(.*?)'\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*'(.*?)'\.split\('\|'\)",
+                text, re.DOTALL
+            )
+        for match in matches:
+            try:
+                p, a_str, c_str, k_str = match[0], match[1], match[2], match[3]
+                a = int(a_str)
+                c = int(c_str)
+                k_list = k_str.split('|')
+                digits = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                def e_func(c_val):
+                    if c_val < a:
+                        return digits[c_val] if c_val < len(digits) else str(c_val)
+                    return e_func(c_val // a) + (digits[c_val % a] if (c_val % a) < len(digits) else str(c_val % a))
+                lookup = {}
+                for i in range(c):
+                    key = e_func(i)
+                    val = k_list[i] if i < len(k_list) and k_list[i] else key
+                    lookup[key] = val
+                unpacked = re.sub(r'\b[0-9a-zA-Z]+\b', lambda m: lookup.get(m.group(0), m.group(0)), p)
+                unpacked_all.append(unpacked)
+            except Exception:
+                pass
+        return '\n'.join(unpacked_all)
+
+    @staticmethod
+    def _extract_base64_stream(text: str) -> Optional[str]:
+        """Detect and decode base64 encoded m3u8 or mp4 stream links."""
+        try:
+            import base64
+            b64_matches = re.findall(r'(?:atob\(|["\'])(aHR0c[a-zA-Z0-9+/=]{15,})(?:["\']|\))', text)
+            for b64_str in b64_matches:
+                try:
+                    padded = b64_str + '=' * (-len(b64_str) % 4)
+                    decoded = base64.b64decode(padded).decode('utf-8', errors='ignore')
+                    if ('.m3u8' in decoded.lower() or '.mp4' in decoded.lower()) and decoded.startswith('http'):
+                        return decoded.replace('\\/', '/').replace('&amp;', '&')
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        return None
+
+    def _extract_stream_from_content(self, content: str, ref_url: str, title: str = "", thumbnail: str = "") -> Optional[Dict[str, Any]]:
+        """Scans HTML / JS text for direct m3u8, mp4, Base64, and unpacked JS streams."""
+        # 1. Match direct .m3u8 URLs in HTML or JS
+        m3u8_matches = re.findall(r'(https?://[^\s"\'<>]+\.m3u8[^\s"\'<>]*)', content, re.IGNORECASE)
+        if m3u8_matches:
+            clean_stream = m3u8_matches[0].replace('\\/', '/').replace('&amp;', '&')
+            return {'stream_url': clean_stream, 'type': 'm3u8', 'title': title, 'thumbnail': thumbnail, 'referer': ref_url}
+
+        # 2. Match direct .mp4 URLs
+        mp4_matches = re.findall(r'(https?://[^\s"\'<>]+\.mp4[^\s"\'<>]*)', content, re.IGNORECASE)
+        if mp4_matches:
+            clean_mp4 = mp4_matches[0].replace('\\/', '/').replace('&amp;', '&')
+            return {'stream_url': clean_mp4, 'type': 'direct', 'title': title, 'thumbnail': thumbnail, 'referer': ref_url}
+
+        # 3. Check Base64 encoded streams
+        b64_stream = self._extract_base64_stream(content)
+        if b64_stream:
+            is_m3u8 = '.m3u8' in b64_stream.lower()
+            return {'stream_url': b64_stream, 'type': 'm3u8' if is_m3u8 else 'direct', 'title': title, 'thumbnail': thumbnail, 'referer': ref_url}
+
+        # 4. Search common JavaScript player configs (DPlayer, Playerjs, Artplayer, JWPlayer, videojs)
+        js_stream_m = re.search(r'(?:url|source|file|hlsUrl|videoUrl|src)\s*:\s*["\'](https?://[^"\']+)["\']', content, re.IGNORECASE)
+        if js_stream_m:
+            st_url = js_stream_m.group(1).replace('\\/', '/').replace('&amp;', '&')
+            is_m3u8 = '.m3u8' in st_url.lower()
+            return {'stream_url': st_url, 'type': 'm3u8' if is_m3u8 else 'direct', 'title': title, 'thumbnail': thumbnail, 'referer': ref_url}
+
+        # 5. Dean Edwards packed JavaScript unpacker
+        if 'eval(function(p,a,c,k,e,d)' in content or 'p,a,c,k,e,r' in content:
+            unpacked = self._unpack_dean_edwards(content)
+            if unpacked:
+                sub_res = self._extract_stream_from_content(unpacked, ref_url, title, thumbnail)
+                if sub_res:
+                    return sub_res
+
+        return None
+
     def sniff_stream(self, page_url: str) -> Optional[Dict[str, Any]]:
         headers = {
             'User-Agent': USER_AGENTS[0],
@@ -525,60 +628,22 @@ class UniversalWebSniffer:
             thumb_m = re.search(r'<meta\s+property=["\']og:image["\']\s+content=["\']([^"\']+)["\']', html, re.IGNORECASE)
             thumbnail = thumb_m.group(1) if thumb_m else ''
 
-            # 2. Match direct .m3u8 URLs in HTML or JS
-            m3u8_matches = re.findall(r'(https?://[^\s"\'<>]+\.m3u8[^\s"\'<>]*)', html, re.IGNORECASE)
-            if m3u8_matches:
-                clean_stream = m3u8_matches[0].replace('\\/', '/').replace('&amp;', '&')
-                return {
-                    'stream_url': clean_stream,
-                    'type': 'm3u8',
-                    'title': title,
-                    'thumbnail': thumbnail,
-                    'referer': page_url
-                }
+            # 2. Extract from primary page content
+            primary_res = self._extract_stream_from_content(html, page_url, title, thumbnail)
+            if primary_res:
+                return primary_res
 
-            # 3. Match direct .mp4 URLs
-            mp4_matches = re.findall(r'(https?://[^\s"\'<>]+\.mp4[^\s"\'<>]*)', html, re.IGNORECASE)
-            if mp4_matches:
-                clean_mp4 = mp4_matches[0].replace('\\/', '/').replace('&amp;', '&')
-                return {
-                    'stream_url': clean_mp4,
-                    'type': 'direct',
-                    'title': title,
-                    'thumbnail': thumbnail,
-                    'referer': page_url
-                }
-
-            # 4. Search common JavaScript player configs
-            js_stream_m = re.search(r'(?:url|source|file|hlsUrl|videoUrl|src)\s*:\s*["\'](https?://[^"\']+)["\']', html, re.IGNORECASE)
-            if js_stream_m:
-                st_url = js_stream_m.group(1).replace('\\/', '/').replace('&amp;', '&')
-                is_m3u8 = '.m3u8' in st_url.lower()
-                return {
-                    'stream_url': st_url,
-                    'type': 'm3u8' if is_m3u8 else 'direct',
-                    'title': title,
-                    'thumbnail': thumbnail,
-                    'referer': page_url
-                }
-
-            # 5. Check iframes for video embed players
-            iframe_m = re.findall(r'<iframe\s+[^>]*src=["\'](https?://[^"\']+)["\']', html, re.IGNORECASE)
-            for if_url in iframe_m:
-                if any(x in if_url.lower() for x in ['player', 'embed', 'video', 'm3u8', 'stream', 'share']):
+            # 3. Check iframes for video embed players (up to 2 levels deep, with urljoin)
+            iframe_m = re.findall(r'<iframe\s+[^>]*src=["\']([^"\']+)["\']', html, re.IGNORECASE)
+            for raw_if_url in iframe_m:
+                if_url = urllib.parse.urljoin(page_url, raw_if_url)
+                if any(x in if_url.lower() for x in ['player', 'embed', 'video', 'm3u8', 'stream', 'share', 'play', 'v/', 'e/', 'ok.ru']):
                     try:
                         if_resp = requests.get(if_url, headers=headers, timeout=8, verify=False, proxies=proxies)
                         if if_resp.status_code == 200:
-                            sub_html = if_resp.text
-                            sub_m3u8 = re.findall(r'(https?://[^\s"\'<>]+\.m3u8[^\s"\'<>]*)', sub_html, re.IGNORECASE)
-                            if sub_m3u8:
-                                return {
-                                    'stream_url': sub_m3u8[0].replace('\\/', '/').replace('&amp;', '&'),
-                                    'type': 'm3u8',
-                                    'title': title,
-                                    'thumbnail': thumbnail,
-                                    'referer': if_url
-                                }
+                            sub_res = self._extract_stream_from_content(if_resp.text, if_url, title, thumbnail)
+                            if sub_res:
+                                return sub_res
                     except Exception:
                         pass
 
@@ -654,6 +719,8 @@ class DownloaderEngine:
     # -------------------------------------------------------------------------
     def _fetch_tiktok_data(self, url: str) -> Optional[Dict[str, Any]]:
         clean_url = url.split('?')[0] if 'tiktok.com' in url else url
+        if '/shortdrama/' in url.lower():
+            return self._fetch_tiktok_shortdrama_data(url)
         urls_to_try = [url] if url == clean_url else [clean_url, url]
         headers = {
             'User-Agent': USER_AGENTS[0],
@@ -679,6 +746,168 @@ class DownloaderEngine:
                     continue
         return None
 
+    def _fetch_tiktok_shortdrama_data(self, url: str) -> Optional[Dict[str, Any]]:
+        """
+        Specialized extractor for TikTok Short Drama (Mini-Series / រឿងភាគខ្លី).
+        Queries TikTok drama episode API to extract episode stream or metadata.
+        """
+        m = re.search(r'/shortdrama/episode/(\d+)(?:/(\d+))?', url)
+        if not m:
+            m = re.search(r'drama[_-]?id=(\d+)', url)
+            if not m:
+                return None
+            drama_id = m.group(1)
+            target_ep = 1
+        else:
+            drama_id = m.group(1)
+            target_ep = int(m.group(2)) if m.group(2) else 1
+
+        api_url = "https://www.tiktok.com/api/drama/episode/item_list/"
+        headers = {
+            'User-Agent': USER_AGENTS[0],
+            'Referer': url,
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+        }
+        params = {
+            'dramaID': drama_id,
+            'cursor': '0',
+            'count': '40',
+            'aid': '1988',
+            'language': 'en',
+            'region': 'KH',
+        }
+        proxies = {'http': self.proxy_url, 'https': self.proxy_url} if self.proxy_url else None
+
+        # Pass cookies if available from cookies.txt, settings or installed browsers
+        cookies = None
+        cookie_file = self.get_cookies_file_path()
+        if cookie_file:
+            try:
+                import http.cookiejar
+                jar = http.cookiejar.MozillaCookieJar(cookie_file)
+                jar.load(ignore_discard=True, ignore_expires=True)
+                cookies = {c.name: c.value for c in jar if 'tiktok' in c.domain}
+            except Exception:
+                pass
+
+        if not cookies and self.browser_cookies and self.browser_cookies.lower() not in ["none", ""]:
+            try:
+                import yt_dlp.cookies
+                cj = yt_dlp.cookies.extract_cookies_from_browser(self.browser_cookies.lower())
+                cookies = {c.name: c.value for c in cj if 'tiktok' in c.domain}
+            except Exception:
+                pass
+
+        try:
+            r = requests.get(api_url, params=params, headers=headers, cookies=cookies, timeout=12, verify=False, proxies=proxies)
+            if r.status_code == 200:
+                data = r.json()
+                items = data.get('itemList', [])
+                if not items:
+                    return None
+
+                target_item = None
+                for it in items:
+                    dinfo = it.get('dramaInfo', {}).get('DramaVideoData', {})
+                    if dinfo.get('EpisodeNumber') == target_ep:
+                        target_item = it
+                        break
+                if not target_item:
+                    target_item = items[0]
+
+                drama_info = target_item.get('dramaInfo', {})
+                dvideo = drama_info.get('DramaVideoData', {})
+                drama_name = drama_info.get('dramaName', 'TikTok Short Drama')
+                actual_ep = dvideo.get('EpisodeNumber', target_ep)
+                ep_desc = dvideo.get('TranslatedDescription') or target_item.get('desc') or f"Episode {actual_ep}"
+                covers = drama_info.get('cover', {}).get('urlList', [])
+                cover_url = covers[0] if covers else ""
+
+                v = target_item.get('video', {})
+                play_addr = v.get('playAddr') or v.get('downloadAddr')
+                if not play_addr and v.get('bitrateInfo'):
+                    for b in v['bitrateInfo']:
+                        urls = b.get('PlayAddr', {}).get('UrlList', [])
+                        if urls:
+                            play_addr = urls[0]
+                            break
+
+                is_free = dvideo.get('IsFreeIntro', False)
+                is_preview = dvideo.get('IsPreview', False)
+                item_id = target_item.get('id')
+                linked_id = dvideo.get('LinkedEpisodeID', '0')
+                total_eps = drama_info.get('numVideos', len(items))
+
+                return {
+                    'drama_id': drama_id,
+                    'drama_name': drama_name,
+                    'episode_number': actual_ep,
+                    'title': f"{drama_name} - Episode {actual_ep}",
+                    'description': ep_desc,
+                    'cover': cover_url,
+                    'thumbnail': cover_url,
+                    'play': play_addr,
+                    'play_addr': play_addr,
+                    'is_free': is_free,
+                    'is_preview': is_preview,
+                    'is_locked': not bool(play_addr),
+                    'item_id': item_id,
+                    'linked_id': linked_id,
+                    'total_episodes': total_eps,
+                    'duration': int(drama_info.get('totalDuration', 60)) // max(1, int(total_eps)),
+                    'author': {'nickname': f'TikTok Short Drama ({drama_name})', 'unique_id': target_item.get('author', {}).get('uniqueId', 'shortdrama')},
+                    'raw_item': target_item
+                }
+        except Exception:
+            pass
+        return None
+
+    def download_tiktok_shortdrama(
+        self,
+        url: str,
+        output_dir: str,
+        quality: str = '1080p',
+        progress_callback: Optional[Callable] = None
+    ) -> Dict[str, Any]:
+        self.reset_cancel()
+        os.makedirs(output_dir, exist_ok=True)
+
+        drama_data = self._fetch_tiktok_shortdrama_data(url)
+        if not drama_data:
+            raise Exception("TikTok Short Drama: មិនអាចទាញយកទិន្នន័យពី API របស់ TikTok បានឡើយ។ សូមពិនិត្យមើល Link ឬសាកល្បងម្ដងទៀត។")
+
+        drama_name = drama_data.get('drama_name', 'TikTok_Short_Drama')
+        ep_num = drama_data.get('episode_number', 1)
+        total_eps = drama_data.get('total_episodes', 0)
+        title = sanitize_filename(f"{drama_name}_EP{ep_num:02d}")
+        play_url = drama_data.get('play_addr')
+
+        if play_url:
+            ext = ".mp3" if quality in ['audio_mp3', 'mp3'] else ".mp4"
+            save_path = os.path.join(output_dir, f"{title}{ext}")
+            self.download_direct_file(
+                url=play_url,
+                output_dir=output_dir,
+                custom_filename=f"{title}{ext}",
+                progress_callback=progress_callback
+            )
+            return {
+                'filename': f"{title}{ext}",
+                'path': save_path,
+                'size': os.path.getsize(save_path) if os.path.exists(save_path) else 0,
+                'thumbnail': drama_data.get('thumbnail', ''),
+                'title': f"{drama_name} - Episode {ep_num}",
+                'duration': drama_data.get('duration', 60)
+            }
+
+        # If stream is locked behind TikTok VIP/Coin paywall
+        raise Exception(
+            f"TikTok Short Drama: រឿង '{drama_name}' (ភាគទី {ep_num} នៃ {total_eps} ភាគ) "
+            f"ត្រូវបានការពារដោយប្រព័ន្ធ VIP/Coins Paywall របស់ TikTok។ "
+            f"ភាគនេះតម្រូវឱ្យមាន Login/Coins នៅក្នុង TikTok ទើបអាចទស្សនា ឬទាញយកបាន (ឬបើក Browser Cookies ក្នុង Settings ប្រសិនបើបាន Unlock រួច)។"
+        )
+
     def download_tiktok(
         self,
         url: str,
@@ -688,6 +917,16 @@ class DownloaderEngine:
     ) -> Dict[str, Any]:
         self.reset_cancel()
         os.makedirs(output_dir, exist_ok=True)
+        u_lower = url.lower()
+
+        # 1. Intercept Feed URLs immediately with friendly guidance
+        if any(p in u_lower for p in ['/foryou', '/explore', '/following']):
+            raise Exception("Link នេះជាទំព័រដើម Feed 'For You' របស់ TikTok (មិនមែនជា Link វីដេអូឡើយ)។ សូមចុចលើវីដេអូដែលចង់បាន រួចចុច Share ➔ Copy Link ដើម្បីទាញយក។")
+
+        # 2. Route TikTok Short Drama to dedicated engine
+        if '/shortdrama/' in u_lower:
+            return self.download_tiktok_shortdrama(url=url, output_dir=output_dir, quality=quality, progress_callback=progress_callback)
+
         clean_url = url.split('?')[0] if 'tiktok.com' in url else url
 
         data = None
@@ -699,7 +938,24 @@ class DownloaderEngine:
             data = self._fetch_tiktok_data(url)
 
         if not data:
-            raise Exception("TikTok API resolver unreachable, switching to next engine...")
+            # Native yt-dlp fallback before giving up
+            try:
+                saved_path = self.download_ytdlp(
+                    url=url,
+                    output_dir=output_dir,
+                    quality=quality,
+                    progress_callback=progress_callback
+                )
+                return {
+                    'filename': os.path.basename(saved_path),
+                    'path': saved_path,
+                    'size': os.path.getsize(saved_path) if os.path.exists(saved_path) else 0,
+                    'thumbnail': '',
+                    'title': os.path.basename(saved_path),
+                    'duration': 0
+                }
+            except Exception:
+                raise Exception("TikTok API resolver unreachable, switching to next engine...")
 
         raw_title = data.get('title') or f"TikTok_{data.get('id', int(time.time()))}"
         title = sanitize_filename(raw_title[:80])
@@ -1003,7 +1259,8 @@ class DownloaderEngine:
             re.search(r'"browser_native_hd_url":"([^"]+)"', html) or
             re.search(r'"playable_url_quality_hd":"([^"]+)"', html) or
             re.search(r'"hd_src_no_ratelimit":"([^"]+)"', html) or
-            re.search(r'"representation_id":\s*"[^"]*hd[^"]*".*?"base_url":\s*"([^"]+)"', html, re.IGNORECASE)
+            re.search(r'"representation_id":\s*"[^"]*hd[^"]*".*?"base_url":\s*"([^"]+)"', html, re.IGNORECASE) or
+            re.search(r'"playback_url":"([^"]+)"', html)
         )
         sd_match = (
             re.search(r'sd_src:"([^"]+)"', html) or 
@@ -1036,6 +1293,102 @@ class DownloaderEngine:
             'size': os.path.getsize(saved_file) if os.path.exists(saved_file) else 0,
             'thumbnail': '',
             'title': "Facebook Video"
+        }
+
+    # -------------------------------------------------------------------------
+    # TIER 1: INSTAGRAM REELS & MEDIA RESOLVER
+    # -------------------------------------------------------------------------
+    def download_instagram(
+        self,
+        url: str,
+        output_dir: str,
+        quality: str = '1080p',
+        progress_callback: Optional[Callable] = None
+    ) -> Dict[str, Any]:
+        self.reset_cancel()
+        os.makedirs(output_dir, exist_ok=True)
+
+        # 1. Try yt-dlp first
+        try:
+            saved_file = self.download_ytdlp(
+                url=url,
+                output_dir=output_dir,
+                quality=quality,
+                progress_callback=progress_callback
+            )
+            cached = self._metadata_cache.get(url) or {}
+            return {
+                'filename': os.path.basename(saved_file),
+                'path': saved_file,
+                'size': os.path.getsize(saved_file) if os.path.exists(saved_file) else 0,
+                'thumbnail': cached.get('info', {}).get('thumbnail', ''),
+                'title': os.path.basename(saved_file)
+            }
+        except Exception as e:
+            if self.is_cancelled() or "cancelled" in str(e).lower():
+                raise CancelledException("Download cancelled by user.")
+            pass
+
+        # 2. Public Embed Fallback (Bypasses Login Wall)
+        shortcode_match = re.search(r'/(?:p|reel|reels|tv)/([A-Za-z0-9_-]+)', url)
+        if not shortcode_match:
+            raise Exception("Invalid Instagram link format.")
+
+        shortcode = shortcode_match.group(1)
+        embed_urls = [
+            f"https://www.instagram.com/reel/{shortcode}/embed/captioned/",
+            f"https://www.instagram.com/p/{shortcode}/embed/captioned/",
+            f"https://www.instagram.com/reel/{shortcode}/embed/",
+            f"https://www.instagram.com/p/{shortcode}/embed/"
+        ]
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Sec-Fetch-Mode': 'navigate'
+        }
+        proxies = {'http': self.proxy_url, 'https': self.proxy_url} if self.proxy_url else None
+
+        stream_url = ""
+        poster_url = ""
+        for ep in embed_urls:
+            try:
+                resp = requests.get(ep, headers=headers, timeout=10, verify=False, proxies=proxies)
+                if resp.status_code == 200:
+                    html = resp.text
+                    v_match = re.search(r'<video[^>]+src="([^"]+)"', html) or re.search(r'"video_url":"([^"]+)"', html)
+                    if v_match:
+                        stream_url = v_match.group(1).replace('\\u0026', '&').replace('&amp;', '&').replace('\\/', '/')
+                    img_match = re.search(r'<img[^>]+EmbeddedMediaImage[^>]+src="([^"]+)"', html) or re.search(r'"display_url":"([^"]+)"', html)
+                    if img_match:
+                        poster_url = img_match.group(1).replace('\\u0026', '&').replace('&amp;', '&').replace('\\/', '/')
+                    if stream_url:
+                        break
+            except Exception:
+                continue
+
+        if not stream_url:
+            raise Exception("Instagram video stream extraction failed. Please ensure post is public or enable Browser Cookies in Settings.")
+
+        title = f"Instagram_{shortcode}"
+        ext = ".mp3" if quality in ['audio_mp3', 'mp3'] else ".mp4"
+        save_path = os.path.join(output_dir, f"{title}{ext}")
+
+        saved_file = self._download_single_stream(
+            url=stream_url,
+            save_path=save_path,
+            total_bytes=0,
+            progress_callback=progress_callback,
+            thumbnail=poster_url,
+            title=f"Instagram {shortcode}"
+        )
+        return {
+            'filename': os.path.basename(saved_file),
+            'path': saved_file,
+            'size': os.path.getsize(saved_file) if os.path.exists(saved_file) else 0,
+            'thumbnail': poster_url,
+            'title': f"Instagram {shortcode}"
         }
 
     # -------------------------------------------------------------------------
@@ -1094,183 +1447,231 @@ class DownloaderEngine:
         q_map = {'4k': '4k', '1080p': '1080p', '720p': '720p', 'mp3': 'audio_mp3'}
         eff_quality = q_map.get(quality.lower(), quality)
 
-        # TIER 1: SPECIALIZED PLATFORM RESOLVERS
-        if 'tiktok.com' in u_lower or 'douyin.com' in u_lower:
+        last_error = None
+        for attempt in range(3):
+            if self.is_cancelled():
+                raise CancelledException("Download cancelled by user.")
             try:
-                tk_res = self.download_tiktok(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
-                return tk_res
-            except CancelledException:
-                raise
-            except Exception as e:
-                if self.is_cancelled() or "cancelled" in str(e).lower():
-                    raise CancelledException("Download cancelled by user.")
-                pass
+                # TIER 1: SPECIALIZED PLATFORM RESOLVERS
+                if 'tiktok.com' in u_lower or 'douyin.com' in u_lower:
+                    if any(p in u_lower for p in ['/foryou', '/explore', '/following']):
+                        raise Exception("Link នេះជាទំព័រដើម Feed 'For You' របស់ TikTok (មិនមែនជា Link វីដេអូឡើយ)។ សូមចុចលើវីដេអូដែលចង់បាន រួចចុច Share ➔ Copy Link ដើម្បីទាញយក។")
+                    if '/shortdrama/' in u_lower:
+                        return self.download_tiktok_shortdrama(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
+                    try:
+                        tk_res = self.download_tiktok(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
+                        return tk_res
+                    except CancelledException:
+                        raise
+                    except Exception as e:
+                        if self.is_cancelled() or "cancelled" in str(e).lower():
+                            raise CancelledException("Download cancelled by user.")
+                        pass
 
-        elif 'pinterest.com' in u_lower or 'pin.it' in u_lower or 'pinterest.' in u_lower:
-            try:
-                pin_res = self.download_pinterest(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
-                return pin_res
-            except CancelledException:
-                raise
-            except Exception as e:
-                if self.is_cancelled() or "cancelled" in str(e).lower():
-                    raise CancelledException("Download cancelled by user.")
-                pass
+                elif 'pinterest.com' in u_lower or 'pin.it' in u_lower or 'pinterest.' in u_lower:
+                    try:
+                        pin_res = self.download_pinterest(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
+                        return pin_res
+                    except CancelledException:
+                        raise
+                    except Exception as e:
+                        if self.is_cancelled() or "cancelled" in str(e).lower():
+                            raise CancelledException("Download cancelled by user.")
+                        pass
 
-        elif 'facebook.com' in u_lower or 'fb.watch' in u_lower or 'fb.com' in u_lower:
-            try:
-                fb_res = self.download_facebook(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
-                return fb_res
-            except CancelledException:
-                raise
-            except Exception as e:
-                if self.is_cancelled() or "cancelled" in str(e).lower():
-                    raise CancelledException("Download cancelled by user.")
-                pass
+                elif 'facebook.com' in u_lower or 'fb.watch' in u_lower or 'fb.com' in u_lower or 'fb.gg' in u_lower or 'fb.me' in u_lower:
+                    try:
+                        fb_res = self.download_facebook(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
+                        return fb_res
+                    except CancelledException:
+                        raise
+                    except Exception as e:
+                        if self.is_cancelled() or "cancelled" in str(e).lower():
+                            raise CancelledException("Download cancelled by user.")
+                        pass
 
-        # TIER 2: DIRECT M3U8 / HLS STREAMS
-        if '.m3u8' in u_lower:
-            try:
-                title = f"Stream_{int(time.time())}"
-                ext = ".mp3" if eff_quality in ['audio_mp3', 'mp3'] else ".mp4"
-                save_path = os.path.join(output_dir, f"{title}{ext}")
-                self.m3u8_engine.download_hls_stream(
-                    m3u8_url=u_clean,
-                    save_path=save_path,
-                    quality=eff_quality,
-                    title="M3U8 HLS Stream",
-                    progress_callback=progress_callback,
-                    cancel_check=self.is_cancelled,
-                    pause_check=self.is_paused,
-                    record_speed=self.record_speed
-                )
-                return {
-                    'filename': os.path.basename(save_path),
-                    'path': save_path,
-                    'size': os.path.getsize(save_path) if os.path.exists(save_path) else 0,
-                    'thumbnail': '',
-                    'title': os.path.basename(save_path)
-                }
-            except CancelledException:
-                raise
-            except Exception as e:
-                if self.is_cancelled() or "cancelled" in str(e).lower():
-                    raise CancelledException("Download cancelled by user.")
-                pass
+                elif 'instagram.com' in u_lower:
+                    try:
+                        ig_res = self.download_instagram(url=u_clean, output_dir=output_dir, quality=eff_quality, progress_callback=progress_callback)
+                        return ig_res
+                    except CancelledException:
+                        raise
+                    except Exception as e:
+                        if self.is_cancelled() or "cancelled" in str(e).lower():
+                            raise CancelledException("Download cancelled by user.")
+                        pass
 
-        # TIER 3: UNIVERSAL WEBPAGE VIDEO & CHINESE DRAMA SNIFFER
-        if not is_video_platform_url(u_clean) and not any(u_lower.endswith(ext) for ext in ['.mp4', '.mkv', '.zip', '.rar', '.exe', '.mp3']):
-            try:
-                sniffed = self.web_sniffer.sniff_stream(u_clean)
-                if sniffed and sniffed.get('stream_url'):
-                    st_url = sniffed['stream_url']
-                    st_title = sniffed.get('title') or f"Web_Video_{int(time.time())}"
-                    st_thumb = sniffed.get('thumbnail', '')
-                    ext = ".mp3" if eff_quality in ['audio_mp3', 'mp3'] else ".mp4"
-                    save_path = os.path.join(output_dir, f"{st_title}{ext}")
-
-                    if sniffed.get('type') == 'm3u8':
+                # TIER 2: DIRECT M3U8 / HLS STREAMS
+                if '.m3u8' in u_lower:
+                    try:
+                        title = f"Stream_{int(time.time())}"
+                        ext = ".mp3" if eff_quality in ['audio_mp3', 'mp3'] else ".mp4"
+                        save_path = os.path.join(output_dir, f"{title}{ext}")
                         self.m3u8_engine.download_hls_stream(
-                            m3u8_url=st_url,
+                            m3u8_url=u_clean,
                             save_path=save_path,
                             quality=eff_quality,
-                            title=st_title,
-                            thumbnail=st_thumb,
-                            referer=sniffed.get('referer', u_clean),
+                            title="M3U8 HLS Stream",
                             progress_callback=progress_callback,
                             cancel_check=self.is_cancelled,
                             pause_check=self.is_paused,
                             record_speed=self.record_speed
                         )
-                    else:
-                        self._download_single_stream(
-                            url=st_url,
-                            save_path=save_path,
-                            total_bytes=0,
-                            progress_callback=progress_callback,
-                            thumbnail=st_thumb,
-                            title=st_title
-                        )
+                        return {
+                            'filename': os.path.basename(save_path),
+                            'path': save_path,
+                            'size': os.path.getsize(save_path) if os.path.exists(save_path) else 0,
+                            'thumbnail': '',
+                            'title': os.path.basename(save_path)
+                        }
+                    except CancelledException:
+                        raise
+                    except Exception as e:
+                        if self.is_cancelled() or "cancelled" in str(e).lower():
+                            raise CancelledException("Download cancelled by user.")
+                        pass
+
+                # TIER 3: UNIVERSAL WEBPAGE VIDEO & CHINESE DRAMA SNIFFER
+                if not is_video_platform_url(u_clean) and not any(u_lower.endswith(ext) for ext in ['.mp4', '.mkv', '.zip', '.rar', '.exe', '.mp3']):
+                    try:
+                        sniffed = self.web_sniffer.sniff_stream(u_clean)
+                        if sniffed and sniffed.get('stream_url'):
+                            st_url = sniffed['stream_url']
+                            st_title = sniffed.get('title') or f"Web_Video_{int(time.time())}"
+                            st_thumb = sniffed.get('thumbnail', '')
+                            ext = ".mp3" if eff_quality in ['audio_mp3', 'mp3'] else ".mp4"
+                            save_path = os.path.join(output_dir, f"{st_title}{ext}")
+
+                            if sniffed.get('type') == 'm3u8':
+                                self.m3u8_engine.download_hls_stream(
+                                    m3u8_url=st_url,
+                                    save_path=save_path,
+                                    quality=eff_quality,
+                                    title=st_title,
+                                    thumbnail=st_thumb,
+                                    referer=sniffed.get('referer', u_clean),
+                                    progress_callback=progress_callback,
+                                    cancel_check=self.is_cancelled,
+                                    pause_check=self.is_paused,
+                                    record_speed=self.record_speed
+                                )
+                            else:
+                                self._download_single_stream(
+                                    url=st_url,
+                                    save_path=save_path,
+                                    total_bytes=0,
+                                    progress_callback=progress_callback,
+                                    thumbnail=st_thumb,
+                                    title=st_title
+                                )
+                            return {
+                                'filename': os.path.basename(save_path),
+                                'path': save_path,
+                                'size': os.path.getsize(save_path) if os.path.exists(save_path) else 0,
+                                'thumbnail': st_thumb,
+                                'title': st_title
+                            }
+                    except CancelledException:
+                        raise
+                    except Exception as e:
+                        if self.is_cancelled() or "cancelled" in str(e).lower():
+                            raise CancelledException("Download cancelled by user.")
+                        pass
+
+                # TIER 4: TURBO YT-DLP ENGINE
+                try:
+                    file_path = self.download_ytdlp(
+                        url=u_clean,
+                        output_dir=output_dir,
+                        quality=eff_quality,
+                        audio_bitrate=bitrate,
+                        download_subtitles=download_subs,
+                        start_time=trim_start,
+                        end_time=trim_end,
+                        progress_callback=progress_callback
+                    )
+                    cached = self._metadata_cache.get(u_clean) or {}
+                    thumb_out = cached.get('info', {}).get('thumbnail', '')
+                    title_out = cached.get('info', {}).get('title', '') or os.path.basename(file_path)
+
                     return {
-                        'filename': os.path.basename(save_path),
-                        'path': save_path,
-                        'size': os.path.getsize(save_path) if os.path.exists(save_path) else 0,
-                        'thumbnail': st_thumb,
-                        'title': st_title
+                        'filename': os.path.basename(file_path),
+                        'path': file_path,
+                        'size': os.path.getsize(file_path) if os.path.exists(file_path) else 0,
+                        'thumbnail': thumb_out,
+                        'title': title_out
                     }
+                except CancelledException:
+                    raise
+                except Exception as e_ytdlp:
+                    if self.is_cancelled() or "cancelled" in str(e_ytdlp).lower():
+                        raise CancelledException("Download cancelled by user.")
+                    # TIER 5 & 6: DIRECT STREAM RESILIENT HTTP CHUNKER FALLBACK
+                    try:
+                        file_path = self.download_direct_file(
+                            url=u_clean,
+                            output_dir=output_dir,
+                            progress_callback=progress_callback
+                        )
+                        return {
+                            'filename': os.path.basename(file_path),
+                            'path': file_path,
+                            'size': os.path.getsize(file_path) if os.path.exists(file_path) else 0,
+                            'thumbnail': '',
+                            'title': os.path.basename(file_path)
+                        }
+                    except CancelledException:
+                        raise
+                    except Exception as e_direct:
+                        if self.is_cancelled() or "cancelled" in str(e_direct).lower():
+                            raise CancelledException("Download cancelled by user.")
+                        friendly_err = humanize_download_error(str(e_ytdlp))
+                        raise Exception(friendly_err)
+
             except CancelledException:
                 raise
-            except Exception as e:
-                if self.is_cancelled() or "cancelled" in str(e).lower():
+            except Exception as e_attempt:
+                last_error = e_attempt
+                if self.is_cancelled() or "cancelled" in str(e_attempt).lower():
                     raise CancelledException("Download cancelled by user.")
-                pass
-
-        # TIER 4: TURBO YT-DLP ENGINE
-        try:
-            file_path = self.download_ytdlp(
-                url=u_clean,
-                output_dir=output_dir,
-                quality=eff_quality,
-                audio_bitrate=bitrate,
-                download_subtitles=download_subs,
-                start_time=trim_start,
-                end_time=trim_end,
-                progress_callback=progress_callback
-            )
-            cached = self._metadata_cache.get(u_clean) or {}
-            thumb_out = cached.get('info', {}).get('thumbnail', '')
-            title_out = cached.get('info', {}).get('title', '') or os.path.basename(file_path)
-
-            return {
-                'filename': os.path.basename(file_path),
-                'path': file_path,
-                'size': os.path.getsize(file_path) if os.path.exists(file_path) else 0,
-                'thumbnail': thumb_out,
-                'title': title_out
-            }
-        except CancelledException:
-            raise
-        except Exception as e_ytdlp:
-            if self.is_cancelled() or "cancelled" in str(e_ytdlp).lower():
-                raise CancelledException("Download cancelled by user.")
-            # TIER 5 & 6: DIRECT STREAM RESILIENT HTTP CHUNKER FALLBACK
-            try:
-                file_path = self.download_direct_file(
-                    url=u_clean,
-                    output_dir=output_dir,
-                    progress_callback=progress_callback
-                )
-                return {
-                    'filename': os.path.basename(file_path),
-                    'path': file_path,
-                    'size': os.path.getsize(file_path) if os.path.exists(file_path) else 0,
-                    'thumbnail': '',
-                    'title': os.path.basename(file_path)
-                }
-            except CancelledException:
+                err_lower = str(e_attempt).lower()
+                if attempt < 2 and any(k in err_lower for k in ["timeout", "timed out", "connection reset", "10054", "403", "remotedisconnected", "429", "too many"]):
+                    time.sleep(1.2 * (attempt + 1))
+                    continue
                 raise
-            except Exception as e_direct:
-                if self.is_cancelled() or "cancelled" in str(e_direct).lower():
-                    raise CancelledException("Download cancelled by user.")
-                friendly_err = humanize_download_error(str(e_ytdlp))
-                raise Exception(friendly_err)
+
+        if last_error:
+            raise last_error
 
     # -------------------------------------------------------------------------
     # YT-DLP CONFIGURATION BUILDER (FIXES N-SIG, 403 & BOT CHECK)
     # -------------------------------------------------------------------------
-    def _build_ytdlp_base_opts(self) -> Dict[str, Any]:
+    def get_cookies_file_path(self) -> Optional[str]:
+        """Check for user-supplied cookies.txt in app directory or appdata."""
+        from utils import get_app_data_path, get_base_dir
+        candidates = [
+            os.path.join(get_base_dir(), "cookies.txt"),
+            os.path.join(get_app_data_path(), "cookies.txt"),
+        ]
+        for p in candidates:
+            if os.path.exists(p) and os.path.getsize(p) > 20:
+                return p
+        return None
+
+    def _build_ytdlp_base_opts(self, url: str = "") -> Dict[str, Any]:
         ffmpeg_dir = get_ffmpeg_location()
         opts = {
             'quiet': True,
             'no_warnings': True,
+            'logger': YtDlpQuietLogger(),
             'nocheckcertificate': True,
             'geo_bypass': True,
             'ignoreerrors': False,
-            'retries': 100,
-            'fragment_retries': 100,
-            'skip_unavailable_fragments': False,
-            'concurrent_fragment_downloads': 8,
-            'socket_timeout': 45,
+            'retries': 20,
+            'fragment_retries': 25,
+            'skip_unavailable_fragments': True,
+            'concurrent_fragment_downloads': 5,
+            'socket_timeout': 30,
             'buffersize': 8388608,
             'continuedl': True,
             'windowsfilenames': True,
@@ -1285,6 +1686,10 @@ class DownloaderEngine:
             'format_sort_force': True,
             'prefer_free_formats': False,
             'extractor_args': {
+                'youtube': {
+                    'player_client': ['ios', 'android', 'mweb', 'web_creator', 'web'],
+                    'player_skip': ['configs', 'webpage'],
+                },
                 'tiktok': {
                     'webpage_download': True
                 }
@@ -1292,7 +1697,7 @@ class DownloaderEngine:
             'http_headers': {
                 'User-Agent': USER_AGENTS[0],
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,km;q=0.7',
                 'Sec-Fetch-Mode': 'navigate',
             }
         }
@@ -1300,8 +1705,16 @@ class DownloaderEngine:
             opts['ffmpeg_location'] = ffmpeg_dir
             opts['merge_output_format'] = 'mp4'
 
-        if self.browser_cookies and self.browser_cookies.lower() not in ["none", ""]:
+        cookie_file = self.get_cookies_file_path()
+        if cookie_file:
+            opts['cookiefile'] = cookie_file
+        elif self.browser_cookies and self.browser_cookies.lower() not in ["none", ""]:
             opts['cookiesfrombrowser'] = (self.browser_cookies.lower(),)
+        elif url and any(p in url.lower() for p in ['iqiyi.com', 'wetv.vip', 'v.qq.com', 'bilibili.com', 'youku.com', 'mgtv.com', 'tiktok.com', 'douyin.com']):
+            # Auto-try installed browser cookies to unlock VIP streams for Asian drama & TikTok platforms
+            for b in ['edge', 'chrome', 'firefox', 'brave']:
+                opts['cookiesfrombrowser'] = (b,)
+                break
 
         if self.proxy_url:
             opts['proxy'] = self.proxy_url
@@ -1330,16 +1743,39 @@ class DownloaderEngine:
 
         # TikTok Fast Inspection
         if 'tiktok.com' in url.lower() or 'douyin.com' in url.lower():
+            if any(p in url.lower() for p in ['/foryou', '/explore', '/following']):
+                res = {
+                    'type': 'feed',
+                    'platform': platform_info,
+                    'title': 'TikTok Home / For You Feed (ទំព័រដើម TikTok)',
+                    'thumbnail': '',
+                    'duration': 0,
+                    'duration_str': 'Feed',
+                    'uploader': 'TikTok Feed',
+                    'upload_date': datetime.now().strftime("%Y-%m-%d"),
+                    'subtitles': [],
+                    'has_4k': False,
+                    'has_1080p': True,
+                    'qualities': ['1080p', '720p'],
+                    'formats': ['TikTok Feed Page'],
+                    'estimated_size_str': 'N/A',
+                    'is_feed': True,
+                    'message': 'Link នេះជាទំព័រដើម Feed មិនមែនជាវីដេអូទោលឡើយ។ សូមចុចប៊ូតុង Share លើវីដេអូដែលចង់បាន រួចយក "Copy link" មកទាញយក!'
+                }
+                return res
+
             try:
                 d = self._fetch_tiktok_data(url)
                 if d:
                     dur = d.get('duration', 0)
                     dur_str = f"{int(dur//60):02d}:{int(dur%60):02d}" if dur > 0 else "00:00"
+                    is_drama = bool(d.get('drama_id'))
+                    lock_badge = " [VIP Locked]" if d.get('is_locked') else ""
                     res = {
                         'type': 'video',
                         'platform': platform_info,
-                        'title': d.get('title', 'TikTok Video'),
-                        'thumbnail': d.get('cover') or d.get('origin_cover') or '',
+                        'title': (d.get('title') or 'TikTok Video') + lock_badge,
+                        'thumbnail': d.get('cover') or d.get('origin_cover') or d.get('thumbnail') or '',
                         'duration': dur,
                         'duration_str': dur_str,
                         'uploader': d.get('author', {}).get('nickname', 'TikTok Creator'),
@@ -1348,8 +1784,10 @@ class DownloaderEngine:
                         'has_4k': False,
                         'has_1080p': True,
                         'qualities': ['1080p', '720p', 'audio_mp3'],
-                        'formats': ['MP4 (HD No Watermark)', 'MP3 (Audio 320kbps)'],
+                        'formats': ['MP4 (HD Stream)', 'MP3 (Audio 320kbps)'],
                         'estimated_size_str': '15 - 60 MB',
+                        'is_shortdrama': is_drama,
+                        'is_locked': d.get('is_locked', False),
                         'raw_info': d
                     }
                     self._metadata_cache[clean_url] = {'time': time.time(), 'info': res, 'raw_data': d}
@@ -1425,6 +1863,40 @@ class DownloaderEngine:
             self._metadata_cache[url] = {'time': time.time(), 'info': res, 'raw_data': res}
             return res
 
+        # Instagram Fast Inspection
+        if 'instagram.com' in url.lower():
+            shortcode_m = re.search(r'/(?:p|reel|reels|tv)/([A-Za-z0-9_-]+)', url)
+            if shortcode_m:
+                sc = shortcode_m.group(1)
+                res_ig = {
+                    'type': 'video',
+                    'platform': platform_info,
+                    'title': f"Instagram Reel ({sc})",
+                    'thumbnail': '',
+                    'duration': 0,
+                    'duration_str': 'Reel / Video',
+                    'uploader': 'Instagram Creator',
+                    'upload_date': datetime.now().strftime("%Y-%m-%d"),
+                    'subtitles': [],
+                    'has_4k': False,
+                    'has_1080p': True,
+                    'qualities': ['1080p', '720p', 'audio_mp3'],
+                    'formats': ['MP4 (Original HD)', 'MP3 (Audio 320kbps)'],
+                    'estimated_size_str': '10 - 45 MB'
+                }
+                try:
+                    ep = f"https://www.instagram.com/reel/{sc}/embed/captioned/"
+                    headers = {'User-Agent': USER_AGENTS[0], 'Accept': 'text/html,*/*'}
+                    r = requests.get(ep, headers=headers, timeout=6, verify=False)
+                    if r.status_code == 200:
+                        img_match = re.search(r'<img[^>]+EmbeddedMediaImage[^>]+src="([^"]+)"', r.text) or re.search(r'"display_url":"([^"]+)"', r.text)
+                        if img_match:
+                            res_ig['thumbnail'] = img_match.group(1).replace('\\u0026', '&').replace('&amp;', '&').replace('\\/', '/')
+                except Exception:
+                    pass
+                self._metadata_cache[url] = {'time': time.time(), 'info': res_ig, 'raw_data': res_ig}
+                return res_ig
+
         # Direct Media Link Fast Inspection
         if any(url.lower().endswith(ext) or ext in url.lower() for ext in ['.mp4', '.mkv', '.webm', '.mov', '.avi', '.mp3', '.m4a', '.wav', '.zip', '.rar', '.iso', '.exe']):
             try:
@@ -1464,7 +1936,7 @@ class DownloaderEngine:
                 pass
 
         # Turbo yt-dlp Deep Inspection
-        ydl_opts = self._build_ytdlp_base_opts()
+        ydl_opts = self._build_ytdlp_base_opts(url)
         ydl_opts['skip_download'] = True
 
         try:
@@ -1577,7 +2049,7 @@ class DownloaderEngine:
         return res
 
     def extract_playlist_info(self, url: str) -> List[Dict[str, Any]]:
-        ydl_opts = self._build_ytdlp_base_opts()
+        ydl_opts = self._build_ytdlp_base_opts(url)
         ydl_opts['extract_flat'] = 'in_playlist'
         ydl_opts['skip_download'] = True
 
@@ -1696,8 +2168,8 @@ class DownloaderEngine:
                         'User-Agent': USER_AGENTS[0],
                         'Accept': '*/*'
                     }
-                    r = requests.get(effective_url, headers=c_headers, stream=True, timeout=25, proxies=proxies, verify=False)
-                    r.raise_for_status()
+                    if r.status_code != 206:
+                        raise ValueError("Server returned 200 instead of 206 Partial Content, falling back to single stream.")
 
                     mode = 'ab' if existing_bytes > 0 else 'wb'
                     with open(part_path, mode) as f:
@@ -1762,17 +2234,22 @@ class DownloaderEngine:
                 for part in part_files:
                     if os.path.exists(part):
                         with open(part, 'rb') as infile:
-                            outfile.write(infile.read())
+                            shutil.copyfileobj(infile, outfile, length=1024 * 1024)
                         try:
                             os.remove(part)
                         except Exception:
                             pass
+        except CancelledException:
+            raise
         except Exception:
             for part in part_files:
                 if os.path.exists(part):
                     try: os.remove(part)
                     except Exception: pass
-            raise
+            if self._is_cancelled:
+                raise CancelledException("Download cancelled by user.")
+            # Fallback seamlessly to robust single stream downloader
+            return self._download_single_stream(effective_url, save_path, total_bytes, progress_callback, proxies)
 
         self.record_speed(0)
         if progress_callback:
@@ -2029,7 +2506,7 @@ class DownloaderEngine:
                     except Exception:
                         pass
 
-        ydl_opts = self._build_ytdlp_base_opts()
+        ydl_opts = self._build_ytdlp_base_opts(url)
         if 'pinterest' in url.lower() or 'pin.it' in url.lower():
             ydl_opts.pop('http_chunk_size', None)
             if 'bestvideo' in format_str:
@@ -2089,14 +2566,60 @@ class DownloaderEngine:
             if self._is_cancelled or "cancelled" in str(e).lower() or isinstance(e, CancelledException):
                 raise CancelledException("Download cancelled by user.")
             err_str = str(e).lower()
-            if ("403" in err_str or "forbidden" in err_str or "bot" in err_str) and self.browser_cookies == "none":
-                for fallback_browser in ["chrome", "edge", "firefox", "brave", "opera"]:
+
+            # YouTube Client Rotation Fallback
+            if ('youtube.com' in url.lower() or 'youtu.be' in url.lower()) and any(k in err_str for k in ["403", "forbidden", "bot", "sign in", "confirm", "throttled", "format"]):
+                fallback_client_combos = [
+                    ['android', 'tv'],
+                    ['mweb'],
+                    ['ios', 'mweb'],
+                    ['web_creator', 'web']
+                ]
+                for client_combo in fallback_client_combos:
+                    if self._is_cancelled:
+                        raise CancelledException("Download cancelled by user.")
                     try:
-                        ydl_opts['cookiesfrombrowser'] = (fallback_browser,)
-                        with yt_dlp.YoutubeDL(ydl_opts) as ydl_retry:
+                        retry_opts = dict(ydl_opts)
+                        retry_opts['extractor_args'] = {
+                            'youtube': {
+                                'player_client': client_combo,
+                                'player_skip': ['configs', 'webpage']
+                            }
+                        }
+                        with yt_dlp.YoutubeDL(retry_opts) as ydl_retry:
                             info = ydl_retry.extract_info(url, download=True)
                             if info:
-                                return ydl_retry.prepare_filename(info)
+                                filename = ydl_retry.prepare_filename(info)
+                                for audio_ext in ['.mp3', '.m4a', '.wav', '.flac', '.opus']:
+                                    if quality.lower().endswith(audio_ext.lstrip('.')):
+                                        base_name, _ = os.path.splitext(filename)
+                                        audio_p = base_name + audio_ext
+                                        if os.path.exists(audio_p):
+                                            return audio_p
+                                return filename
+                    except Exception as e_rot:
+                        if self._is_cancelled or "cancelled" in str(e_rot).lower() or isinstance(e_rot, CancelledException):
+                            raise CancelledException("Download cancelled by user.")
+                        continue
+
+            if ("403" in err_str or "forbidden" in err_str or "bot" in err_str or "login" in err_str) and self.browser_cookies == "none":
+                for fallback_browser in ["edge", "chrome", "firefox", "brave", "opera", "vivaldi"]:
+                    if self._is_cancelled:
+                        raise CancelledException("Download cancelled by user.")
+                    try:
+                        retry_cookie_opts = dict(ydl_opts)
+                        retry_cookie_opts['cookiesfrombrowser'] = (fallback_browser,)
+                        with yt_dlp.YoutubeDL(retry_cookie_opts) as ydl_retry:
+                            info = ydl_retry.extract_info(url, download=True)
+                            if info:
+                                filename = ydl_retry.prepare_filename(info)
+                                for audio_ext in ['.mp3', '.m4a', '.wav', '.flac', '.opus']:
+                                    if quality.lower().endswith(audio_ext.lstrip('.')):
+                                        base_name, _ = os.path.splitext(filename)
+                                        audio_p = base_name + audio_ext
+                                        if os.path.exists(audio_p):
+                                            return audio_p
+                                return filename
                     except Exception as e_retry:
                         if self._is_cancelled or "cancelled" in str(e_retry).lower() or isinstance(e_retry, CancelledException):
                             raise CancelledException("Download cancelled by user.")

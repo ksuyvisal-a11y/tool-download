@@ -3,6 +3,7 @@ import sys
 import re
 import csv
 import json
+import shutil
 import hashlib
 import threading
 from pathlib import Path
@@ -26,10 +27,18 @@ def detect_platform(url: str) -> Dict[str, str]:
     if '.m3u8' in url_lower:
         return {"name": "M3U8 HLS Stream", "icon": "[ M3U8 HLS Stream ]", "color": "#10B981", "bg": "#022C22"}
     elif 'youtube.com' in url_lower or 'youtu.be' in url_lower:
+        if '/shorts/' in url_lower:
+            return {"name": "YouTube Shorts", "icon": "[ YouTube Shorts ]", "color": "#EF4444", "bg": "#3B0707"}
         return {"name": "YouTube", "icon": "[ YouTube Video ]", "color": "#EF4444", "bg": "#3B0707"}
     elif 'douyin.com' in url_lower:
         return {"name": "Douyin (抖音)", "icon": "[ Douyin Video ]", "color": "#00F2FE", "bg": "#082F49"}
     elif 'tiktok.com' in url_lower:
+        if '/shortdrama/' in url_lower:
+            return {"name": "TikTok Short Drama", "icon": "[ TikTok Short Drama ]", "color": "#06B6D4", "bg": "#083344"}
+        elif '/photo/' in url_lower:
+            return {"name": "TikTok Photos", "icon": "[ TikTok Photos ]", "color": "#06B6D4", "bg": "#083344"}
+        elif '/foryou' in url_lower or '/explore' in url_lower or '/following' in url_lower:
+            return {"name": "TikTok Feed", "icon": "[ TikTok Home Feed ]", "color": "#F59E0B", "bg": "#451A03"}
         return {"name": "TikTok", "icon": "[ TikTok Video ]", "color": "#06B6D4", "bg": "#083344"}
     elif 'kuaishou.com' in url_lower or 'kwai.com' in url_lower:
         return {"name": "Kuaishou (快手)", "icon": "[ Kuaishou Video ]", "color": "#FF7700", "bg": "#431407"}
@@ -43,14 +52,20 @@ def detect_platform(url: str) -> Dict[str, str]:
         return {"name": "WeTV / Tencent", "icon": "[ WeTV / Tencent ]", "color": "#0099FF", "bg": "#082F49"}
     elif 'youku.com' in url_lower:
         return {"name": "Youku (优酷)", "icon": "[ Youku Drama ]", "color": "#00B2FF", "bg": "#082F49"}
-    elif 'facebook.com' in url_lower or 'fb.watch' in url_lower:
+    elif 'facebook.com' in url_lower or 'fb.watch' in url_lower or 'fb.gg' in url_lower or 'fb.me' in url_lower:
+        if '/reel/' in url_lower or '/share/r/' in url_lower:
+            return {"name": "Facebook Reel", "icon": "[ Facebook Reel ]", "color": "#3B82F6", "bg": "#172554"}
         return {"name": "Facebook", "icon": "[ Facebook Video ]", "color": "#3B82F6", "bg": "#172554"}
     elif 'instagram.com' in url_lower:
+        if '/reel/' in url_lower or '/reels/' in url_lower:
+            return {"name": "Instagram Reel", "icon": "[ Instagram Reel ]", "color": "#EC4899", "bg": "#4A0429"}
         return {"name": "Instagram", "icon": "[ Instagram Media ]", "color": "#EC4899", "bg": "#4A0429"}
-    elif 'twitter.com' in url_lower or 'x.com' in url_lower:
-        return {"name": "X / Twitter", "icon": "[ X / Twitter ]", "color": "#94A3B8", "bg": "#0F172A"}
     elif 'threads.net' in url_lower:
         return {"name": "Threads", "icon": "[ Threads Media ]", "color": "#E2E8F0", "bg": "#0F172A"}
+    elif 'capcut.com' in url_lower:
+        return {"name": "CapCut", "icon": "[ CapCut Template ]", "color": "#00D2D3", "bg": "#083344"}
+    elif 'twitter.com' in url_lower or 'x.com' in url_lower:
+        return {"name": "X / Twitter", "icon": "[ X / Twitter ]", "color": "#94A3B8", "bg": "#0F172A"}
     elif 'pinterest.com' in url_lower or 'pin.it' in url_lower or 'pinterest.' in url_lower:
         return {"name": "Pinterest", "icon": "[ Pinterest Pin ]", "color": "#E60023", "bg": "#450A0A"}
     elif 'reddit.com' in url_lower or 'redd.it' in url_lower:
@@ -139,11 +154,20 @@ def get_resource_path(relative_path: str) -> str:
     """
     Get absolute path to resource.
     Priority order:
-    1. Live Micro-Patch in %APPDATA%/SKD_Tool/patches/
-    2. PyInstaller bundle (_MEIPASS)
-    3. Workspace / Base executable folder
+    1. Workspace / Base executable folder (in dev mode)
+    2. Live Micro-Patch in %APPDATA%/SKD_Tool/patches/ (for frozen app)
+    3. PyInstaller bundle (_MEIPASS)
     """
-    # 1. Micro-Patch override
+    # 0. In dev mode (not frozen), workspace source files ALWAYS take highest priority!
+    if not getattr(sys, 'frozen', False):
+        local_path = os.path.join(get_base_dir(), relative_path)
+        if os.path.exists(local_path):
+            return local_path
+        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+        if os.path.exists(script_path):
+            return script_path
+
+    # 1. Micro-Patch override (for frozen executable)
     patch_path = os.path.join(get_app_data_path("patches"), relative_path)
     if os.path.exists(patch_path):
         return patch_path
@@ -224,6 +248,8 @@ def save_history_db(history_items: List[Dict[str, Any]]):
     except Exception:
         pass
 
+DEFAULT_GOOGLE_SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxr1GoWMqnf5qtIXLucl2v8WP6FDZkKY4trz5e4P-zsNPxQHSFUBPXcdafGVz1DhiYh/exec"
+
 def load_settings_db() -> Dict[str, Any]:
     """Load persistent settings from settings.json."""
     path = get_app_data_path("app_settings.json")
@@ -241,7 +267,7 @@ def load_settings_db() -> Dict[str, Any]:
         "clipboard_monitor": True,
         "quality_preset": "1080p Full HD",
         "audio_bitrate": "320k",
-        "google_sheet_webhook_url": ""
+        "google_sheet_webhook_url": DEFAULT_GOOGLE_SHEET_WEBHOOK_URL
     }
     if os.path.exists(path):
         try:
@@ -299,12 +325,12 @@ def is_video_platform_url(url: str) -> bool:
     if not url:
         return False
     video_domains = [
-        'youtube.com', 'youtu.be', 'tiktok.com', 'douyin.com', 'facebook.com', 'fb.watch',
-        'instagram.com', 'twitter.com', 'x.com', 'threads.net', 'vimeo.com', 'dailymotion.com',
+        'youtube.com', 'youtu.be', 'tiktok.com', 'douyin.com', 'facebook.com', 'fb.watch', 'fb.gg', 'fb.me',
+        'instagram.com', 'twitter.com', 'x.com', 'threads.net', 'capcut.com', 'vimeo.com', 'dailymotion.com',
         'soundcloud.com', 'reddit.com', 'redd.it', 'twitch.tv', 'bilibili.com', 'bilibili.tv',
         'pinterest.com', 'pin.it', 'pinterest.', 'kuaishou.com', 'kwai.com', 'xiaohongshu.com',
         'xhslink.com', 'weibo.com', 'weibo.cn', 'iqiyi.com', 'iq.com', 'wetv.vip', 'v.qq.com',
-        'youku.com', '.m3u8'
+        'youku.com', 'terabox.com', 'teraboxapp.com', '.m3u8'
     ]
     url_lower = url.lower()
     return any(domain in url_lower for domain in video_domains)
@@ -356,10 +382,24 @@ def humanize_download_error(err_str: str, lang: str = "km") -> str:
     """Convert technical error strings into user-friendly explanations in Khmer and English."""
     err_low = str(err_str).lower()
     
+    if "tiktok.com/foryou" in err_low or "/foryou" in err_low or "tiktok feed" in err_low or "feed 'for you'" in err_low:
+        if lang == "km":
+            return "តំណភ្ជាប់នេះជាទំព័រដើម Feed 'For You' របស់ TikTok (មិនមែនជា Link វីដេអូឡើយ)។ សូមចុចលើវីដេអូដែលចង់បាន រួចចុច Share ➔ Copy Link ដើម្បីទាញយក។"
+        return "This is TikTok's 'For You' feed page, not a direct video URL. Please open the video and click Share ➔ Copy Link."
+
+    if "shortdrama" in err_low or "short drama" in err_low:
+        if "vip" in err_low or "lock" in err_low or "paywall" in err_low or "coins" in err_low:
+            if lang == "km":
+                return "TikTok Short Drama: ភាគនេះត្រូវបានការពារដោយប្រព័ន្ធ VIP/Coins Paywall របស់ TikTok។ តម្រូវឱ្យមាន Login/Coins នៅក្នុង TikTok ទើបអាចទស្សនា ឬទាញយកបាន (ឬបើក Browser Cookies ក្នុង Settings ប្រសិនបើបាន Unlock រួច)។"
+            return "TikTok Short Drama: This episode is locked behind TikTok VIP/Coin Paywall. Account login with unlocked coins is required."
+        if lang == "km":
+            return "TikTok Short Drama: ដើម្បីទាញយកភាគនេះ សូមចុចប៊ូតុង Share លើវីដេអូភាគនោះ រួចជ្រើសរើស 'Copy Link' នោះប្រព័ន្ធនឹងទាញយកវីដេអូបាន ១០០%!"
+        return "TikTok Short Drama: Please click Share on the episode video and choose 'Copy Link' to download."
+
     if "sign in to confirm you're not a bot" in err_low or "bot" in err_low:
         if lang == "km":
-            return "YouTube ទាមទារការបញ្ជាក់ Bot (សូមជ្រើសរើស Browser Cookies ក្នុង Settings ដូចជា Chrome ឬ Edge រួចសាកល្បងម្តងទៀត)។"
-        return "YouTube requires bot verification. Please select Browser Cookies in Settings (e.g. Chrome/Edge) and retry."
+            return "YouTube តម្រូវឱ្យផ្ទៀងផ្ទាត់ Bot (ប្រព័ន្ធបានបើក Client Rotation Bypass ស្វ័យប្រវត្តិ។ ប្រសិនបើតឹងតែង សូមជ្រើសរើស Browser Cookies ក្នុង Settings)។"
+        return "YouTube requires bot verification (Client Rotation bypass applied. If persistent, enable Browser Cookies in Settings)."
         
     if "private video" in err_low or "this video is private" in err_low or "login required" in err_low:
         if lang == "km":
@@ -373,13 +413,33 @@ def humanize_download_error(err_str: str, lang: str = "km") -> str:
 
     if "403" in err_low or "forbidden" in err_low:
         if lang == "km":
-            return "Server បដិសេធការទាញយក (HTTP 403 Forbidden) - ប្រព័ន្ធបានព្យាយាម Bypass រួចរាល់។"
-        return "Server rejected request (HTTP 403 Forbidden). Bypass attempted."
+            return "Server បដិសេធការទាញយក (HTTP 403 Forbidden) - ប្រព័ន្ធបានព្យាយាម Auto-Bypass រួចរាល់។ សូមចុច Retry ដើម្បីសាកល្បងម្តងទៀត។"
+        return "Server rejected request (HTTP 403 Forbidden). Bypass attempted. Please click Retry."
 
-    if "timeout" in err_low or "timed out" in err_low or "connection reset" in err_low or "10054" in err_low:
+    if "429" in err_low or "too many requests" in err_low:
         if lang == "km":
-            return "ការភ្ជាប់បណ្តាញអ៊ីនធឺណិតមានការយឺតយ៉ាវ ឬដាច់ខ្សែបណ្តោះអាសន្ន។ សូមសាកល្បងម្តងទៀត។"
-        return "Network connection timed out or reset. Please check your internet and retry."
+            return "Server កំពុងជាប់រវល់ ឬ Rate Limit (HTTP 429) - សូមរង់ចាំបន្តិចរួចចុច Retry។"
+        return "Server is busy or rate-limited (HTTP 429). Please wait a moment and click Retry."
+
+    if "404" in err_low or "not found" in err_low:
+        if lang == "km":
+            return "រកមិនឃើញតំណភ្ជាប់ឯកសារលើ Server ឡើយ (HTTP 404 Not Found)។"
+        return "File not found on the remote server (HTTP 404 Not Found)."
+
+    if "timeout" in err_low or "timed out" in err_low or "connection reset" in err_low or "10054" in err_low or "remotedisconnected" in err_low:
+        if lang == "km":
+            return "ការភ្ជាប់បណ្តាញអ៊ីនធឺណិតមានការយឺតយ៉ាវ ឬដាច់ខ្សែបណ្តោះអាសន្ន។ សូមចុច Retry ដើម្បីទាញយកបន្ត។"
+        return "Network connection timed out or reset. Please click Retry to resume downloading."
+
+    if "no video formats found" in err_low or "requested format is not available" in err_low:
+        if lang == "km":
+            return "មិនមានទម្រង់វីដេអូដែលត្រូវនឹងកម្រិតនេះឡើយ (អាចជា Photo Slideshow ឬត្រូវជ្រើសរើស Auto Best)។"
+        return "Requested media format not available (may be a photo slideshow; try selecting Auto Best)."
+
+    if "space" in err_low and ("disk" in err_low or "drive" in err_low or "full" in err_low):
+        if lang == "km":
+            return "ទំហំ Hard Disk (Drive C/D) ពេញ! សូមសម្អាតទំហំទំនេររួចសាកល្បងម្ដងទៀត។"
+        return "Disk drive is full! Please free up disk space and retry."
 
     return str(err_str)
 
@@ -594,6 +654,43 @@ def play_system_alert_sound(sound_mode: str = "both"):
 # =========================================================================
 # 5. CLOUD ACTIVITY LOGGING & TELEMETRY (GOOGLE SHEETS / DATABASE)
 # =========================================================================
+def get_device_and_user_identity() -> str:
+    """
+    Returns formatted User and Machine identifier for Cloud Telemetry.
+    Combines: Windows Username + Device Hostname + VIP License Plan / HWID.
+    Example: 'Visal (Admin Computer) [Lifetime VIP | SKD-2533-59E4]'
+    """
+    import socket
+    import getpass
+
+    username = os.environ.get("USERNAME") or os.environ.get("USER") or ""
+    if not username:
+        try:
+            username = getpass.getuser()
+        except Exception:
+            username = "User"
+
+    hostname = socket.gethostname() or "PC"
+
+    plan_label = "Lifetime VIP"
+    hwid_str = ""
+    try:
+        from licensing import load_and_validate_current_license, get_machine_hwid
+        _, lic_data, _ = load_and_validate_current_license()
+        if lic_data and isinstance(lic_data, dict):
+            plan_label = lic_data.get("plan") or "Lifetime VIP"
+        hwid = get_machine_hwid()
+        if hwid:
+            hwid_str = hwid
+    except Exception:
+        pass
+
+    if hwid_str:
+        return f"{username} ({hostname}) [{plan_label} | {hwid_str}]"
+    else:
+        return f"{username} ({hostname}) [{plan_label}]"
+
+
 def log_download_to_google_sheet(
     title: str,
     url: str,
@@ -606,9 +703,9 @@ def log_download_to_google_sheet(
     """
     Asynchronously logs download activity to Google Sheets webhook.
     Runs in a detached daemon thread so UI and download speed are never blocked.
+    Automatically includes User Account, Machine HWID, and License Plan.
     """
     import threading
-    import socket
     import requests
     from datetime import datetime
 
@@ -619,27 +716,30 @@ def log_download_to_google_sheet(
                 settings = load_settings_db()
                 target_url = settings.get("google_sheet_webhook_url", "")
 
+            # Fallback to embedded default webhook URL so all users' downloads are tracked automatically
+            if not target_url or not str(target_url).strip():
+                target_url = DEFAULT_GOOGLE_SHEET_WEBHOOK_URL
+
             if not target_url or not str(target_url).strip():
                 return
 
-            device_name = socket.gethostname()
+            device_str = get_device_and_user_identity()
             timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
 
-            # Read license info if available
-            license_info = ""
-            try:
-                lic_path = get_app_data_path("license.json")
-                if os.path.exists(lic_path):
-                    with open(lic_path, "r", encoding="utf-8") as f:
-                        lic_data = json.load(f)
-                        license_info = lic_data.get("license_key", "") or lic_data.get("plan", "")
-            except Exception:
-                pass
+            # Auto-detect platform from URL if empty or generic "Universal"
+            plat_name = platform or "Universal"
+            if (not plat_name or plat_name in ("Universal", "Web", "Default")) and url:
+                try:
+                    p_info = detect_platform(url)
+                    if p_info and p_info.get("name"):
+                        plat_name = p_info.get("name")
+                except Exception:
+                    pass
 
             payload = {
                 "timestamp": timestamp,
-                "device": f"{device_name} ({license_info})" if license_info else device_name,
-                "platform": platform or "Universal",
+                "device": device_str,
+                "platform": plat_name or "Universal",
                 "title": title or "Media File",
                 "url": url or "",
                 "quality": quality or "Default",
@@ -647,9 +747,10 @@ def log_download_to_google_sheet(
                 "status": status or "Completed"
             }
 
-            requests.post(str(target_url).strip(), json=payload, timeout=6)
+            requests.post(str(target_url).strip(), json=payload, timeout=8)
         except Exception:
             # Silently handle network timeouts or webhook errors without interrupting the client
             pass
 
     threading.Thread(target=_worker, daemon=True).start()
+

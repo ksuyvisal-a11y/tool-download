@@ -24,7 +24,7 @@ import shutil
 from typing import Dict, Any, Optional, Tuple, Callable
 
 # Base Release Version
-BASE_APP_VERSION = "1.1.1"
+BASE_APP_VERSION = "1.1.2"
 
 def get_current_app_version() -> str:
     """Read the effective application version (checks live micro-patch manifest first)."""

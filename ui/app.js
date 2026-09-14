@@ -137,13 +137,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentLanguage = "km";
 
   function resetDownloadButtonState() {
+    const isKm = (currentLanguage === "km");
     if (btnDownloadNow) {
       btnDownloadNow.disabled = false;
-      btnDownloadNow.innerHTML = `<i data-lucide="zap"></i> <span>DOWNLOAD NOW</span>`;
+      btnDownloadNow.innerHTML = `<i data-lucide="zap"></i> <span>${isKm ? "ទាញយកភ្លាមៗ" : "DOWNLOAD NOW"}</span>`;
     }
     if (btnSmartDownload) {
       btnSmartDownload.disabled = false;
-      const isKm = (currentLanguage === "km");
       btnSmartDownload.innerHTML = `<i data-lucide="download"></i> <span id="smartBtnDlText">${isKm ? "ទាញយកឥឡូវនេះ" : "Download Now"}</span>`;
     }
     if (window.lucide) lucide.createIcons();
@@ -516,7 +516,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (btnDownloadNow) {
       btnDownloadNow.disabled = true;
-      btnDownloadNow.innerHTML = `<i data-lucide="loader"></i> <span>CONNECTING...</span>`;
+      const connTxt = (currentLanguage === "km") ? "កំពុងភ្ជាប់..." : "CONNECTING...";
+      btnDownloadNow.innerHTML = `<i data-lucide="loader" class="spin"></i> <span>${connTxt}</span>`;
     }
     if (btnSmartDownload) {
       btnSmartDownload.disabled = true;
@@ -531,9 +532,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const transferCard = document.getElementById("transferCard");
     const transferControlsActive = document.getElementById("transferControlsActive");
     const transferControlsCompleted = document.getElementById("transferControlsCompleted");
+    const transferControlsError = document.getElementById("transferControlsError");
     if (transferCard) transferCard.style.display = "flex";
     if (transferControlsActive) transferControlsActive.style.display = "flex";
     if (transferControlsCompleted) transferControlsCompleted.style.display = "none";
+    if (transferControlsError) transferControlsError.style.display = "none";
 
     const btnPause = document.getElementById("btnPause");
     const btnStop = document.getElementById("btnStop");
@@ -799,6 +802,54 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Transfer Card Error Controls
+  const btnErrorRetry = document.getElementById("btnErrorRetry");
+  const btnErrorDismiss = document.getElementById("btnErrorDismiss");
+
+  if (btnErrorRetry) {
+    btnErrorRetry.addEventListener("click", async () => {
+      btnErrorRetry.disabled = true;
+      const isKm = (currentLanguage === "km");
+      btnErrorRetry.innerHTML = `<i data-lucide="loader" class="spin"></i> <span>${isKm ? "កំពុងព្យាយាម..." : "Retrying..."}</span>`;
+      if (window.lucide) lucide.createIcons();
+
+      setTimeout(() => {
+        if (btnErrorRetry) {
+          btnErrorRetry.disabled = false;
+          btnErrorRetry.innerHTML = `<i data-lucide="rotate-cw"></i> <span>${isKm ? "ព្យាយាមម្តងទៀត" : "Retry"}</span>`;
+          if (window.lucide) lucide.createIcons();
+        }
+      }, 1500);
+
+      // Re-trigger download via API or handleInstantDownload
+      if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.retry_last_download === "function") {
+        try {
+          const res = await window.pywebview.api.retry_last_download();
+          if (res && res.success) {
+            isDownloading = true;
+            isPaused = false;
+            updatePauseUI(false);
+            const transferControlsActive = document.getElementById("transferControlsActive");
+            const transferControlsError = document.getElementById("transferControlsError");
+            if (transferControlsActive) transferControlsActive.style.display = "flex";
+            if (transferControlsError) transferControlsError.style.display = "none";
+            const mediaTitleText = document.getElementById("mediaTitleText");
+            if (mediaTitleText) mediaTitleText.innerText = isKm ? "កំពុងទាញយកឡើងវិញ..." : "Retrying download...";
+            return;
+          }
+        } catch (_) {}
+      }
+      handleInstantDownload();
+    });
+  }
+
+  if (btnErrorDismiss) {
+    btnErrorDismiss.addEventListener("click", () => {
+      const transferCard = document.getElementById("transferCard");
+      if (transferCard) transferCard.style.display = "none";
+    });
+  }
+
   // =========================================================================
   // =========================================================================
   // AUDIO NOTIFICATION SYSTEM (WINDOWS SYSTEM SOUND)
@@ -941,8 +992,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const transferControlsActive = document.getElementById("transferControlsActive");
     const transferControlsCompleted = document.getElementById("transferControlsCompleted");
+    const transferControlsError = document.getElementById("transferControlsError");
     if (transferControlsActive) transferControlsActive.style.display = "none";
     if (transferControlsCompleted) transferControlsCompleted.style.display = "flex";
+    if (transferControlsError) transferControlsError.style.display = "none";
 
     const mediaTitleText = document.getElementById("mediaTitleText");
     const mediaSubText = document.getElementById("mediaSubText");
@@ -963,9 +1016,16 @@ document.addEventListener("DOMContentLoaded", () => {
     triggerDownloadCompleteSound(res.filename);
   };
 
-  window.onDownloadError = function(err) {
+  window.onDownloadError = function(errData) {
+    let errMsg = "";
+    if (typeof errData === "object" && errData !== null) {
+      errMsg = errData.error || "Error downloading media";
+    } else {
+      errMsg = String(errData || "Error downloading media");
+    }
+
     // If cancelled by user, redirect cleanly to onDownloadCancelled
-    if (err && (err.toLowerCase().includes("cancelled") || err.toLowerCase().includes("stopped"))) {
+    if (errMsg && (errMsg.toLowerCase().includes("cancelled") || errMsg.toLowerCase().includes("stopped"))) {
       window.onDownloadCancelled();
       return;
     }
@@ -977,17 +1037,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resetDownloadButtonState();
 
-    const btnClearVideo = document.getElementById("btnClearVideo") || document.getElementById("btnStop");
-    if (btnClearVideo) {
-      btnClearVideo.disabled = false;
-      btnClearVideo.innerHTML = `<i data-lucide="trash-2"></i> <span>Clear Video</span>`;
-    }
+    const transferControlsActive = document.getElementById("transferControlsActive");
+    const transferControlsCompleted = document.getElementById("transferControlsCompleted");
+    const transferControlsError = document.getElementById("transferControlsError");
+    if (transferControlsActive) transferControlsActive.style.display = "none";
+    if (transferControlsCompleted) transferControlsCompleted.style.display = "none";
+    if (transferControlsError) transferControlsError.style.display = "flex";
 
     const mediaTitleText = document.getElementById("mediaTitleText");
     const mediaSubText = document.getElementById("mediaSubText");
     const progressBarFill = document.getElementById("progressBarFill");
-    if (mediaTitleText) mediaTitleText.innerText = "❌ Download Failed";
-    if (mediaSubText) mediaSubText.innerText = `${err || 'Error downloading media'}`;
+    const isKm = (currentLanguage === "km");
+    if (mediaTitleText) mediaTitleText.innerText = isKm ? "❌ ការទាញយកជួបបញ្ហា" : "❌ Download Issue";
+    if (mediaSubText) mediaSubText.innerText = errMsg;
     if (progressBarFill) {
       progressBarFill.classList.remove("paused-bar");
       progressBarFill.style.width = "100%";
@@ -1002,6 +1064,13 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePauseUI(false);
 
     resetDownloadButtonState();
+
+    const transferControlsActive = document.getElementById("transferControlsActive");
+    const transferControlsCompleted = document.getElementById("transferControlsCompleted");
+    const transferControlsError = document.getElementById("transferControlsError");
+    if (transferControlsActive) transferControlsActive.style.display = "none";
+    if (transferControlsCompleted) transferControlsCompleted.style.display = "none";
+    if (transferControlsError) transferControlsError.style.display = "none";
 
     const btnClearVideo = document.getElementById("btnClearVideo") || document.getElementById("btnStop");
     if (btnClearVideo) {
@@ -2905,6 +2974,18 @@ function doPost(e) {
     const smartBtnCoverText = document.getElementById("smartBtnCoverText");
     if (smartBtnCoverText) {
       smartBtnCoverText.innerText = isKm ? "រូបភាព HD" : "HD Cover";
+    }
+    const lblInstantAddToQueue = document.getElementById("lblInstantAddToQueue");
+    if (lblInstantAddToQueue) {
+      lblInstantAddToQueue.innerText = isKm ? "+ បន្ថែមក្នុងជួរ" : "+ Add to Queue";
+    }
+    const lblErrorRetry = document.getElementById("lblErrorRetry");
+    if (lblErrorRetry) {
+      lblErrorRetry.innerText = isKm ? "ព្យាយាមម្តងទៀត" : "Retry";
+    }
+    const lblErrorDismiss = document.getElementById("lblErrorDismiss");
+    if (lblErrorDismiss) {
+      lblErrorDismiss.innerText = isKm ? "បិទ" : "Dismiss";
     }
     if (topBarUpdateLabel && currentUpdatePackage && currentUpdatePackage.latest_version) {
       topBarUpdateLabel.innerText = isKm 
