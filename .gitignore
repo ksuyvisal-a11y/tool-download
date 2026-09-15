@@ -37,7 +37,9 @@ temp/
 *.log
 
 # 5. IDE & OS Junk
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
 .idea/
 .DS_Store
 Thumbs.db
