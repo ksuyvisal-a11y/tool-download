@@ -53,7 +53,8 @@ from utils import (
     play_completion_sound_and_voice,
     get_all_translations,
     humanize_download_error,
-    log_download_to_google_sheet,
+    send_telegram_download_alert,
+    test_telegram_bot_connection,
     get_device_and_user_identity
 )
 
@@ -143,9 +144,9 @@ class DownloaderApi:
             self.history_items.insert(0, item_record)
             save_history_db(self.history_items)
 
-            # Sync to Google Sheets Cloud Activity Telemetry in background
+            # Sync to Telegram Bot Activity Telemetry in background
             try:
-                log_download_to_google_sheet(
+                send_telegram_download_alert(
                     title=item_record.get("filename", "Media File"),
                     url=item.get("url", ""),
                     platform=item.get("platform", "Universal"),
@@ -222,7 +223,9 @@ class DownloaderApi:
             "sound_mode": self.settings.get("sound_mode", "bell"),
             "sound_alert": self.settings.get("sound_alert", True),
             "update_feed_url": self.settings.get("update_feed_url", ""),
-            "google_sheet_webhook_url": self.settings.get("google_sheet_webhook_url", ""),
+            "telegram_bot_token": self.settings.get("telegram_bot_token", ""),
+            "telegram_chat_id": self.settings.get("telegram_chat_id", ""),
+            "telegram_telemetry_enabled": self.settings.get("telegram_telemetry_enabled", True),
             "language": self.settings.get("language", "km"),
             "translations": get_all_translations(),
             "automation": self.automation_settings
@@ -456,42 +459,9 @@ class DownloaderApi:
             )
         return {"success": True, "settings": self.settings}
 
-    def test_google_sheet_webhook(self, webhook_url: str) -> Dict[str, Any]:
-        """Test sending a ping to the Google Sheets Webhook URL."""
-        import requests
-        import socket
-        from datetime import datetime
-
-        clean_url = str(webhook_url or "").strip()
-        if not clean_url:
-            return {"success": False, "error": "សូមបញ្ចូល Webhook URL របស់ Google Sheet ជាមុនសិន!"}
-
-        if not clean_url.startswith("http://") and not clean_url.startswith("https://"):
-            return {"success": False, "error": "URL មិនត្រឹមត្រូវ! ត្រូវតែផ្ដើមដោយ https://script.google.com/..."}
-
-        try:
-            device_str = get_device_and_user_identity()
-            timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
-
-            test_payload = {
-                "timestamp": timestamp,
-                "device": device_str,
-                "platform": "TEST PING",
-                "title": "តេស្តតំណភ្ជាប់ Google Sheet ជោគជ័យ! ✅",
-                "url": "https://script.google.com",
-                "quality": "1080p Full HD",
-                "size": "15.8 MB",
-                "status": "Verified Connected"
-            }
-            resp = requests.post(clean_url, json=test_payload, timeout=8)
-            if resp.status_code in (200, 201, 302):
-                return {"success": True, "message": "បានតេស្តបញ្ជូនទិន្នន័យទៅកាន់ Google Sheet ជោគជ័យ! (Status 200 OK)"}
-            else:
-                return {"success": False, "error": f"Google Server ឆ្លើយតបកូដ: {resp.status_code}"}
-        except requests.exceptions.Timeout:
-            return {"success": False, "error": "ដាច់ពេល (Timeout)! សូមពិនិត្យមើលអ៊ីនធឺណិត ឬ Web App Deploy Setting។"}
-        except Exception as e:
-            return {"success": False, "error": f"កំហុសក្នុងការតភ្ជាប់: {str(e)}"}
+    def test_telegram_bot(self, bot_token: str, chat_id: str) -> Dict[str, Any]:
+        """Test sending a ping message to the specified Telegram Bot."""
+        return test_telegram_bot_connection(bot_token, chat_id)
 
 
     # =========================================================================
@@ -850,10 +820,10 @@ class DownloaderApi:
             self.history_items.insert(0, item)
             save_history_db(self.history_items)
 
-            # Sync to Google Sheets Cloud Activity Telemetry in background
+            # Sync to Telegram Bot Activity Telemetry in background
             try:
                 platform_val = (cached_meta.get("platform", "Universal") if isinstance(cached_meta, dict) else "Universal") or "Universal"
-                log_download_to_google_sheet(
+                send_telegram_download_alert(
                     title=item.get("filename", "Media File"),
                     url=url,
                     platform=platform_val,

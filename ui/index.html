@@ -1037,7 +1037,47 @@
             </div>
           </div>
 
+          <!-- Telegram Bot Telemetry & Real-Time Download Tracker Card -->
+          <div class="card" style="margin-top: 12px;">
+            <div class="setting-row" style="margin-bottom: 6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <i data-lucide="send" class="text-cyan"></i>
+                  <strong style="font-size:0.95rem; color:#f1f5f9;">Telegram Bot Activity Telemetry (ការចាប់សកម្មភាពទាញយក)</strong>
+                </div>
+                <label class="switch-toggle" title="បើក/បិទ ការផ្ញើដំណឹងទៅ Telegram">
+                  <input type="checkbox" id="settingTelegramTelemetryEnabled" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+              <p style="font-size:0.8rem; color:#94a3b8; margin-top:4px; margin-bottom:0;">
+                ទទួលដំណឹងភ្លាមៗលើ Telegram Bot របស់ Admin រាល់ពេលមានអ្នកទាញយក (User, ម៉ាស៊ីន, HWID, Platform, ចំណងជើងវីដេអូ, ទំហំ)។
+              </p>
+            </div>
 
+            <div class="setting-row" style="margin-top: 10px;">
+              <label for="settingTelegramBotToken">Telegram Bot Token:</label>
+              <div class="input-with-btn">
+                <input type="password" id="settingTelegramBotToken" placeholder="ឧទាហរណ៍៖ 123456789:AAFx...">
+                <button type="button" class="btn-secondary" id="btnToggleTokenVisibility" title="Show/Hide Token" style="padding:7px 12px;">
+                  <i data-lucide="eye" id="iconEyeToken"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="setting-row" style="margin-top: 10px;">
+              <label for="settingTelegramChatId">Telegram Chat ID / Channel ID:</label>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="text" id="settingTelegramChatId" placeholder="ឧទាហរណ៍៖ 123456789 ឬ @your_channel" style="flex:1;">
+                <button type="button" class="btn-secondary" id="btnTestTelegramBot" style="min-width:140px; padding:7px 14px; font-size:0.8rem; color:#38bdf8; border-color:rgba(56,189,248,0.4);">
+                  <i data-lucide="send"></i>
+                  <span>តេស្ត Bot (Test)</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="telegramBotTestStatus" style="display:none; margin-top:10px; padding:8px 12px; border-radius:8px; font-size:0.82rem;"></div>
+          </div>
 
           <!-- Version & Update Card -->
           <div class="card" style="margin-top: 12px;">

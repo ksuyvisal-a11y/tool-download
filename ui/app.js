@@ -2344,72 +2344,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const settingSpeedLimit = document.getElementById("settingSpeedLimit");
   const settingCookies = document.getElementById("settingCookies");
   const btnSaveSettings = document.getElementById("btnSaveSettings");
-  const settingGoogleSheetUrl = document.getElementById("settingGoogleSheetUrl");
-  const btnTestGoogleSheet = document.getElementById("btnTestGoogleSheet");
-  const googleSheetTestStatus = document.getElementById("googleSheetTestStatus");
-  const btnOpenSheetGuide = document.getElementById("btnOpenSheetGuide");
-  const sheetGuideModal = document.getElementById("sheetGuideModal");
-  const btnCloseSheetGuideModal = document.getElementById("btnCloseSheetGuideModal");
-  const btnDoneSheetGuide = document.getElementById("btnDoneSheetGuide");
-  const btnCopySheetScript = document.getElementById("btnCopySheetScript");
-  const lblCopySheetScript = document.getElementById("lblCopySheetScript");
-  const codeSheetScript = document.getElementById("codeSheetScript");
+  const settingTelegramBotToken = document.getElementById("settingTelegramBotToken");
+  const settingTelegramChatId = document.getElementById("settingTelegramChatId");
+  const settingTelegramTelemetryEnabled = document.getElementById("settingTelegramTelemetryEnabled");
+  const btnTestTelegramBot = document.getElementById("btnTestTelegramBot");
+  const telegramBotTestStatus = document.getElementById("telegramBotTestStatus");
+  const btnToggleTokenVisibility = document.getElementById("btnToggleTokenVisibility");
+  const iconEyeToken = document.getElementById("iconEyeToken");
 
-  const googleAppsScriptCode = `// Google Apps Script Webhook for SKD Tool Telemetry
-function doPost(e) {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getActiveSheet();
 
-    // Auto-setup headers if sheet is empty
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        "Timestamp (កាលបរិច្ឆេទ)",
-        "Device / License (ម៉ាស៊ីន/កូដ)",
-        "Platform (វេទិកា)",
-        "Video Title (ចំណងជើង)",
-        "URL (តំណភ្ជាប់)",
-        "Quality (កម្រិត)",
-        "File Size (ទំហំ)",
-        "Status (ស្ថានភាព)"
-      ]);
-      sheet.getRange(1, 1, 1, 8).setFontWeight("bold").setBackground("#0f172a").setFontColor("#38bdf8");
-      sheet.setFrozenRows(1);
-    }
-
-    var data = {};
-    if (e.postData && e.postData.contents) {
-      try {
-        data = JSON.parse(e.postData.contents);
-      } catch (err) {
-        data = e.parameter || {};
-      }
-    } else {
-      data = e.parameter || {};
-    }
-
-    sheet.appendRow([
-      data.timestamp || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss"),
-      data.device || "Unknown Device",
-      data.platform || "Universal",
-      data.title || "Media File",
-      data.url || "",
-      data.quality || "Default",
-      data.size || "Unknown",
-      data.status || "Completed"
-    ]);
-
-    return ContentService.createTextOutput(JSON.stringify({
-      status: "success",
-      message: "Data logged successfully"
-    })).setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({
-      status: "error",
-      message: error.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-}`;
 
   if (btnBrowseFolder) {
     btnBrowseFolder.addEventListener("click", async () => {
@@ -2431,7 +2374,9 @@ function doPost(e) {
         sound_mode: settingSoundMode ? settingSoundMode.value : userSoundMode,
         sound_alert: isSoundAlertEnabled,
         update_feed_url: settingUpdateUrl ? settingUpdateUrl.value.trim() : "",
-        google_sheet_webhook_url: settingGoogleSheetUrl ? settingGoogleSheetUrl.value.trim() : "",
+        telegram_bot_token: settingTelegramBotToken ? settingTelegramBotToken.value.trim() : "",
+        telegram_chat_id: settingTelegramChatId ? settingTelegramChatId.value.trim() : "",
+        telegram_telemetry_enabled: settingTelegramTelemetryEnabled ? settingTelegramTelemetryEnabled.checked : true,
         language: settingLanguage ? settingLanguage.value : currentLanguage
       };
       if (settingSoundMode) {
@@ -2448,108 +2393,91 @@ function doPost(e) {
     });
   }
 
-  // Google Sheets Webhook Test Button
-  if (btnTestGoogleSheet) {
-    btnTestGoogleSheet.addEventListener("click", async () => {
-      const url = settingGoogleSheetUrl ? settingGoogleSheetUrl.value.trim() : "";
-      if (!url) {
-        showToast("⚠️ សូមបញ្ចូល Webhook URL របស់ Google Sheet ជាមុនសិន!");
-        if (googleSheetTestStatus) {
-          googleSheetTestStatus.style.display = "block";
-          googleSheetTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
-          googleSheetTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.35)";
-          googleSheetTestStatus.style.color = "#f87171";
-          googleSheetTestStatus.innerHTML = "⚠️ សូមបញ្ចូល Webhook URL របស់ Google Sheet ជាមុនសិន!";
+  // Telegram Bot Token Visibility Toggle
+  if (btnToggleTokenVisibility && settingTelegramBotToken) {
+    btnToggleTokenVisibility.addEventListener("click", () => {
+      if (settingTelegramBotToken.type === "password") {
+        settingTelegramBotToken.type = "text";
+        if (iconEyeToken) iconEyeToken.setAttribute("data-lucide", "eye-off");
+      } else {
+        settingTelegramBotToken.type = "password";
+        if (iconEyeToken) iconEyeToken.setAttribute("data-lucide", "eye");
+      }
+      if (window.lucide) lucide.createIcons();
+    });
+  }
+
+  // Telegram Bot Test Connection Button
+  if (btnTestTelegramBot) {
+    btnTestTelegramBot.addEventListener("click", async () => {
+      const token = settingTelegramBotToken ? settingTelegramBotToken.value.trim() : "";
+      const chatId = settingTelegramChatId ? settingTelegramChatId.value.trim() : "";
+
+      if (!token || !chatId) {
+        showToast("⚠️ សូមបញ្ចូល Telegram Bot Token និង Chat ID ជាមុនសិន!");
+        if (telegramBotTestStatus) {
+          telegramBotTestStatus.style.display = "block";
+          telegramBotTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
+          telegramBotTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.35)";
+          telegramBotTestStatus.style.color = "#f87171";
+          telegramBotTestStatus.innerHTML = "⚠️ សូមបញ្ចូល Telegram Bot Token និង Chat ID ជាមុនសិន!";
         }
         return;
       }
 
-      // Also persist URL immediately
+      // Persist credentials immediately
       if (window.pywebview && window.pywebview.api) {
-        window.pywebview.api.save_settings({ google_sheet_webhook_url: url });
+        window.pywebview.api.save_settings({
+          telegram_bot_token: token,
+          telegram_chat_id: chatId,
+          telegram_telemetry_enabled: settingTelegramTelemetryEnabled ? settingTelegramTelemetryEnabled.checked : true
+        });
       }
 
-      btnTestGoogleSheet.disabled = true;
-      btnTestGoogleSheet.innerHTML = `<i data-lucide="loader-2" class="spin"></i> <span>កំពុងតេស្ត...</span>`;
+      btnTestTelegramBot.disabled = true;
+      btnTestTelegramBot.innerHTML = `<i data-lucide="loader-2" class="spin"></i> <span>កំពុងតេស្ត...</span>`;
       if (window.lucide) lucide.createIcons();
 
-      if (googleSheetTestStatus) {
-        googleSheetTestStatus.style.display = "block";
-        googleSheetTestStatus.style.background = "rgba(6, 182, 212, 0.15)";
-        googleSheetTestStatus.style.border = "1px solid rgba(6, 182, 212, 0.35)";
-        googleSheetTestStatus.style.color = "#38bdf8";
-        googleSheetTestStatus.innerHTML = "កំពុងបញ្ជូនទិន្នន័យតេស្តទៅកាន់ Google Sheet...";
+      if (telegramBotTestStatus) {
+        telegramBotTestStatus.style.display = "block";
+        telegramBotTestStatus.style.background = "rgba(6, 182, 212, 0.15)";
+        telegramBotTestStatus.style.border = "1px solid rgba(6, 182, 212, 0.35)";
+        telegramBotTestStatus.style.color = "#38bdf8";
+        telegramBotTestStatus.innerHTML = "កំពុងផ្ញើសារសាកល្បងទៅកាន់ Telegram Bot...";
       }
 
       try {
-        if (window.pywebview && window.pywebview.api && window.pywebview.api.test_google_sheet_webhook) {
-          const res = await window.pywebview.api.test_google_sheet_webhook(url);
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.test_telegram_bot) {
+          const res = await window.pywebview.api.test_telegram_bot(token, chatId);
           if (res && res.success) {
-            if (googleSheetTestStatus) {
-              googleSheetTestStatus.style.background = "rgba(16, 185, 129, 0.15)";
-              googleSheetTestStatus.style.border = "1px solid rgba(16, 185, 129, 0.4)";
-              googleSheetTestStatus.style.color = "#34d399";
-              googleSheetTestStatus.innerHTML = `✅ <strong>ជោគជ័យ!</strong> ${res.message || "ទិន្នន័យបានរត់ចូល Google Sheet ភ្លាមៗ (Status 200 OK)!"}`;
+            if (telegramBotTestStatus) {
+              telegramBotTestStatus.style.background = "rgba(16, 185, 129, 0.15)";
+              telegramBotTestStatus.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+              telegramBotTestStatus.style.color = "#34d399";
+              telegramBotTestStatus.innerHTML = `✅ <strong>ជោគជ័យ!</strong> ${res.message || "Bot បានផ្ញើសារសាកល្បងទៅ Telegram រួចរាល់!"}`;
             }
-            showToast("✓ ភ្ជាប់ Google Sheet ជោគជ័យ!");
+            showToast("✓ តភ្ជាប់ Telegram Bot ជោគជ័យ!");
           } else {
-            if (googleSheetTestStatus) {
-              googleSheetTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
-              googleSheetTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-              googleSheetTestStatus.style.color = "#f87171";
-              googleSheetTestStatus.innerHTML = `❌ <strong>បរាជ័យ:</strong> ${res.error || "មិនអាចតភ្ជាប់ទៅកាន់ Webhook បានទេ"}`;
+            if (telegramBotTestStatus) {
+              telegramBotTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
+              telegramBotTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+              telegramBotTestStatus.style.color = "#f87171";
+              telegramBotTestStatus.innerHTML = `❌ <strong>បរាជ័យ:</strong> ${res.error || "មិនអាចតភ្ជាប់ទៅ Telegram Bot បានទេ"}`;
             }
             showToast("✕ ការតភ្ជាប់បរាជ័យ!");
           }
         }
       } catch (err) {
-        if (googleSheetTestStatus) {
-          googleSheetTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
-          googleSheetTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-          googleSheetTestStatus.style.color = "#f87171";
-          googleSheetTestStatus.innerHTML = `❌ កំហុស: ${err.message || err}`;
+        if (telegramBotTestStatus) {
+          telegramBotTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
+          telegramBotTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+          telegramBotTestStatus.style.color = "#f87171";
+          telegramBotTestStatus.innerHTML = `❌ កំហុស: ${err.message || err}`;
         }
       } finally {
-        btnTestGoogleSheet.disabled = false;
-        btnTestGoogleSheet.innerHTML = `<i data-lucide="zap"></i> <span>តេស្តភ្ជាប់ (Test)</span>`;
+        btnTestTelegramBot.disabled = false;
+        btnTestTelegramBot.innerHTML = `<i data-lucide="send"></i> <span>តេស្ត Bot (Test)</span>`;
         if (window.lucide) lucide.createIcons();
-      }
-    });
-  }
-
-  // Google Sheets Guide Modal & Copy Script
-  if (btnOpenSheetGuide) {
-    btnOpenSheetGuide.addEventListener("click", () => {
-      if (codeSheetScript) codeSheetScript.textContent = googleAppsScriptCode;
-      if (sheetGuideModal) sheetGuideModal.style.display = "flex";
-      if (window.lucide) lucide.createIcons();
-    });
-  }
-  if (btnCloseSheetGuideModal) {
-    btnCloseSheetGuideModal.addEventListener("click", () => {
-      if (sheetGuideModal) sheetGuideModal.style.display = "none";
-    });
-  }
-  if (btnDoneSheetGuide) {
-    btnDoneSheetGuide.addEventListener("click", () => {
-      if (sheetGuideModal) sheetGuideModal.style.display = "none";
-    });
-  }
-  if (btnCopySheetScript) {
-    btnCopySheetScript.addEventListener("click", async () => {
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(googleAppsScriptCode);
-        } else if (window.pywebview && window.pywebview.api && window.pywebview.api.set_clipboard) {
-          await window.pywebview.api.set_clipboard(googleAppsScriptCode);
-        }
-        if (lblCopySheetScript) lblCopySheetScript.innerText = "បានចម្លងរួចរាល់! ✓";
-        showToast("✓ បានចម្លងកូដ Google Apps Script រួចរាល់!");
-        setTimeout(() => {
-          if (lblCopySheetScript) lblCopySheetScript.innerText = "ចម្លងកូដ (Copy Code)";
-        }, 2500);
-      } catch (err) {
-        showToast("Error copying code: " + err);
       }
     });
   }
@@ -3123,8 +3051,14 @@ function doPost(e) {
       if (settingUpdateUrl && info.update_feed_url) {
         settingUpdateUrl.value = info.update_feed_url;
       }
-      if (settingGoogleSheetUrl && info.google_sheet_webhook_url) {
-        settingGoogleSheetUrl.value = info.google_sheet_webhook_url;
+      if (settingTelegramBotToken && info.telegram_bot_token) {
+        settingTelegramBotToken.value = info.telegram_bot_token;
+      }
+      if (settingTelegramChatId && info.telegram_chat_id) {
+        settingTelegramChatId.value = info.telegram_chat_id;
+      }
+      if (settingTelegramTelemetryEnabled && typeof info.telegram_telemetry_enabled === "boolean") {
+        settingTelegramTelemetryEnabled.checked = info.telegram_telemetry_enabled;
       }
 
       isAppLicensed = true;

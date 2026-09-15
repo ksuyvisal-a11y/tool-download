@@ -248,7 +248,8 @@ def save_history_db(history_items: List[Dict[str, Any]]):
     except Exception:
         pass
 
-DEFAULT_GOOGLE_SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxr1GoWMqnf5qtIXLucl2v8WP6FDZkKY4trz5e4P-zsNPxQHSFUBPXcdafGVz1DhiYh/exec"
+DEFAULT_TELEGRAM_BOT_TOKEN = "8562796575:AAF2Pa3T-xySa5TkSFpSdwUAE__9V15mXpE"
+DEFAULT_TELEGRAM_CHAT_ID = "5096452919"
 
 def load_settings_db() -> Dict[str, Any]:
     """Load persistent settings from settings.json."""
@@ -267,7 +268,10 @@ def load_settings_db() -> Dict[str, Any]:
         "clipboard_monitor": True,
         "quality_preset": "1080p Full HD",
         "audio_bitrate": "320k",
-        "google_sheet_webhook_url": DEFAULT_GOOGLE_SHEET_WEBHOOK_URL
+        "telegram_bot_token": DEFAULT_TELEGRAM_BOT_TOKEN,
+        "telegram_chat_id": DEFAULT_TELEGRAM_CHAT_ID,
+        "telegram_telemetry_enabled": True,
+        "telegram_notify_on_start": False
     }
     if os.path.exists(path):
         try:
@@ -691,17 +695,18 @@ def get_device_and_user_identity() -> str:
         return f"{username} ({hostname}) [{plan_label}]"
 
 
-def log_download_to_google_sheet(
+def send_telegram_download_alert(
     title: str,
     url: str,
     platform: str = "Web",
     quality: str = "Default",
     size: str = "0 MB",
     status: str = "Completed",
-    webhook_url: Optional[str] = None
+    bot_token: Optional[str] = None,
+    chat_id: Optional[str] = None
 ):
     """
-    Asynchronously logs download activity to Google Sheets webhook.
+    Asynchronously logs download activity to Admin's Telegram Bot.
     Runs in a detached daemon thread so UI and download speed are never blocked.
     Automatically includes User Account, Machine HWID, and License Plan.
     """
@@ -711,22 +716,20 @@ def log_download_to_google_sheet(
 
     def _worker():
         try:
-            target_url = webhook_url
-            if not target_url or not str(target_url).strip():
-                settings = load_settings_db()
-                target_url = settings.get("google_sheet_webhook_url", "")
+            settings = load_settings_db()
+            if not settings.get("telegram_telemetry_enabled", True):
+                return
 
-            # Fallback to embedded default webhook URL so all users' downloads are tracked automatically
-            if not target_url or not str(target_url).strip():
-                target_url = DEFAULT_GOOGLE_SHEET_WEBHOOK_URL
+            token = (bot_token or settings.get("telegram_bot_token", "") or DEFAULT_TELEGRAM_BOT_TOKEN or os.environ.get("TELEGRAM_BOT_TOKEN", "")).strip()
+            cid = (chat_id or settings.get("telegram_chat_id", "") or DEFAULT_TELEGRAM_CHAT_ID or os.environ.get("TELEGRAM_CHAT_ID", "")).strip()
 
-            if not target_url or not str(target_url).strip():
+            if not token or not cid:
                 return
 
             device_str = get_device_and_user_identity()
             timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
 
-            # Auto-detect platform from URL if empty or generic "Universal"
+            # Auto-detect platform from URL if empty or generic
             plat_name = platform or "Universal"
             if (not plat_name or plat_name in ("Universal", "Web", "Default")) and url:
                 try:
@@ -736,21 +739,92 @@ def log_download_to_google_sheet(
                 except Exception:
                     pass
 
-            payload = {
-                "timestamp": timestamp,
-                "device": device_str,
-                "platform": plat_name or "Universal",
-                "title": title or "Media File",
-                "url": url or "",
-                "quality": quality or "Default",
-                "size": size or "Unknown",
-                "status": status or "Completed"
-            }
+            # Escape HTML characters for Telegram HTML format
+            safe_title = (title or "Media File").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            safe_device = str(device_str).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            safe_url = (url or "N/A").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-            requests.post(str(target_url).strip(), json=payload, timeout=8)
+            is_completed = status.lower() in ("completed", "done", "success")
+            status_icon = "✅" if is_completed else ("⏳" if status.lower() == "started" else "⚠️")
+
+            text = (
+                f"📥 <b>[SKD TOOL] កំណត់ត្រាទាញយក (Download Alert)</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 <b>អ្នកប្រើប្រាស់/ម៉ាស៊ីន:</b> {safe_device}\n"
+                f"🌐 <b>វេទិកា (Platform):</b> {plat_name}\n"
+                f"🎬 <b>ចំណងជើង:</b> {safe_title}\n"
+                f"🔗 <b>តំណភ្ជាប់:</b> {safe_url}\n"
+                f"📊 <b>ទំហំ/កម្រិត:</b> {quality or 'Default'} | {size or 'Unknown'}\n"
+                f"⏱️ <b>កាលបរិច្ឆេទ:</b> {timestamp}\n"
+                f"⚡ <b>ស្ថានភាព:</b> {status_icon} {status}\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━"
+            )
+
+            api_url = f"https://api.telegram.org/bot{token}/sendMessage"
+            payload = {
+                "chat_id": cid,
+                "text": text,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }
+            requests.post(api_url, json=payload, timeout=8)
         except Exception:
-            # Silently handle network timeouts or webhook errors without interrupting the client
+            # Silently handle network timeouts or API errors without interrupting the client
             pass
 
     threading.Thread(target=_worker, daemon=True).start()
+
+
+def test_telegram_bot_connection(bot_token: str, chat_id: str) -> Dict[str, Any]:
+    """
+    Test sending an instant ping message to the specified Telegram Bot and Chat ID.
+    Returns dictionary with success status and descriptive message.
+    """
+    import requests
+    from datetime import datetime
+
+    token = (bot_token or "").strip()
+    cid = (chat_id or "").strip()
+
+    if not token:
+        return {"success": False, "error": "សូមបញ្ចូល Telegram Bot Token ជាមុនសិន!"}
+    if not cid:
+        return {"success": False, "error": "សូមបញ្ចូល Telegram Chat ID ឬ Channel ID ជាមុនសិន!"}
+
+    try:
+        device_str = get_device_and_user_identity()
+        timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+
+        text = (
+            f"🚀 <b>[SKD TOOL] តេស្តភ្ជាប់ជោគជ័យ (Bot Test OK)</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🤖 Bot ត្រូវបានតភ្ជាប់ទៅកាន់ SKD Tool ដោយជោគជ័យ!\n"
+            f"👤 <b>ឧបករណ៍/ម៉ាស៊ីន:</b> {device_str}\n"
+            f"⏱️ <b>កាលបរិច្ឆេទ:</b> {timestamp}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"<i>រាល់ពេលដែល User ធ្វើការ Download ព័ត៌មាននឹងផ្ញើមកកាន់ទីនេះភ្លាមៗ។</i>"
+        )
+
+        api_url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {
+            "chat_id": cid,
+            "text": text,
+            "parse_mode": "HTML"
+        }
+        resp = requests.post(api_url, json=payload, timeout=10)
+        res_json = resp.json()
+        if resp.status_code == 200 and res_json.get("ok"):
+            return {"success": True, "message": "Bot បានផ្ញើសារសាកល្បងទៅ Telegram ដោយជោគជ័យ! (200 OK)"}
+        else:
+            err_desc = res_json.get("description") or f"HTTP {resp.status_code}"
+            return {"success": False, "error": f"Telegram API Error: {err_desc}"}
+    except requests.exceptions.Timeout:
+        return {"success": False, "error": "ដាច់ពេល (Timeout)! សូមពិនិត្យមើលអ៊ីនធឺណិត ឬ Telegram Token។"}
+    except Exception as e:
+        return {"success": False, "error": f"កំហុសក្នុងការតភ្ជាប់: {str(e)}"}
+
+
+# Alias for backward compatibility
+log_download_to_google_sheet = send_telegram_download_alert
+
 
