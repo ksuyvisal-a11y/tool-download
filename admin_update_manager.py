@@ -57,10 +57,10 @@ class AdminUpdateManagerApp:
         # Version Field
         f_ver = tk.Frame(row1, bg="#070B16")
         f_ver.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        tk.Label(f_ver, text="New Release Version (e.g. 1.1.3):", font=("Segoe UI", 9, "bold"), fg="#E2E8F0", bg="#070B16").pack(anchor="w")
+        tk.Label(f_ver, text="New Release Version (e.g. 1.1.4):", font=("Segoe UI", 9, "bold"), fg="#E2E8F0", bg="#070B16").pack(anchor="w")
         self.ent_version = tk.Entry(f_ver, font=("Consolas", 10, "bold"), bg="#0D1425", fg="#00E5FF", insertbackground="#00E5FF", relief="flat", highlightbackground="#162238", highlightthickness=1)
         self.ent_version.pack(fill="x", pady=4, ipady=4)
-        self.ent_version.insert(0, "1.1.3")
+        self.ent_version.insert(0, "1.1.4")
 
         # Date Field
         f_date = tk.Frame(row1, bg="#070B16")
@@ -127,7 +127,7 @@ class AdminUpdateManagerApp:
                     data = json.load(f)
 
                 self.ent_version.delete(0, tk.END)
-                self.ent_version.insert(0, data.get("version", "1.1.3"))
+                self.ent_version.insert(0, data.get("version", "1.1.4"))
 
                 self.ent_date.delete(0, tk.END)
                 self.ent_date.insert(0, data.get("release_date", datetime.now().strftime("%d %b %Y")))
