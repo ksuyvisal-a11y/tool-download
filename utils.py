@@ -761,23 +761,80 @@ def send_telegram_download_alert(
             )
 
             api_url = f"https://api.telegram.org/bot{token}/sendMessage"
-            payload = {
+            payload_html = {
                 "chat_id": cid,
                 "text": text,
                 "parse_mode": "HTML",
                 "disable_web_page_preview": True
             }
-            resp = requests.post(api_url, json=payload, timeout=8)
-            if resp.status_code != 200:
-                # Fallback to plain text if HTML tags cause Telegram API rejection
-                payload_plain = {
-                    "chat_id": cid,
-                    "text": text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", ""),
-                    "disable_web_page_preview": True
-                }
-                requests.post(api_url, json=payload_plain, timeout=8)
+            payload_plain = {
+                "chat_id": cid,
+                "text": text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", ""),
+                "disable_web_page_preview": True
+            }
+
+            delivered = False
+
+            # Attempt 1: requests with standard verification
+            try:
+                resp = requests.post(api_url, json=payload_html, timeout=8)
+                if resp.status_code == 200:
+                    delivered = True
+                elif resp.status_code != 200:
+                    # Retry with plain text (HTML entity rejection fallback)
+                    resp2 = requests.post(api_url, json=payload_plain, timeout=8)
+                    if resp2.status_code == 200:
+                        delivered = True
+            except Exception:
+                pass
+
+            # Attempt 2: requests with verify=False (bypass missing certifi CA bundle on client PCs)
+            if not delivered:
+                try:
+                    resp = requests.post(api_url, json=payload_html, timeout=8, verify=False)
+                    if resp.status_code == 200:
+                        delivered = True
+                    else:
+                        resp2 = requests.post(api_url, json=payload_plain, timeout=8, verify=False)
+                        if resp2.status_code == 200:
+                            delivered = True
+                except Exception:
+                    pass
+
+            # Attempt 3: Native standard library urllib.request (100% dependency-free & immune to PyInstaller cert issues)
+            if not delivered:
+                try:
+                    import urllib.request
+                    import ssl
+                    import json as _json
+
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+
+                    raw_data = _json.dumps(payload_html).encode('utf-8')
+                    req = urllib.request.Request(
+                        api_url,
+                        data=raw_data,
+                        headers={'Content-Type': 'application/json', 'User-Agent': 'SKD_TOOL_CLIENT/1.1.4'}
+                    )
+                    with urllib.request.urlopen(req, context=ctx, timeout=8) as r:
+                        if r.status == 200:
+                            delivered = True
+                except Exception:
+                    try:
+                        raw_data2 = _json.dumps(payload_plain).encode('utf-8')
+                        req2 = urllib.request.Request(
+                            api_url,
+                            data=raw_data2,
+                            headers={'Content-Type': 'application/json', 'User-Agent': 'SKD_TOOL_CLIENT/1.1.4'}
+                        )
+                        with urllib.request.urlopen(req2, context=ctx, timeout=8) as r2:
+                            if r2.status == 200:
+                                delivered = True
+                    except Exception:
+                        pass
         except Exception:
-            # Silently handle network timeouts or API errors without interrupting the client
             pass
 
     threading.Thread(target=_worker, daemon=True).start()

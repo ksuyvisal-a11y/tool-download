@@ -83,7 +83,22 @@ import importlib.machinery
 # Micro-Patch directory priority
 _appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
 _patch_dir = os.path.join(_appdata, "SKD_Tool", "patches")
-if os.path.exists(_patch_dir) and _patch_dir not in sys.path:
+_has_valid_patch = False
+try:
+    _manifest_p = os.path.join(_patch_dir, "patch_manifest.json")
+    if os.path.exists(_manifest_p):
+        import json as _mf_json, re as _mf_re
+        with open(_manifest_p, "r", encoding="utf-8") as _mf_f:
+            _mf_data = _mf_json.load(_mf_f)
+        _mf_ver = _mf_data.get("version", "0.0.0").lstrip("v")
+        def _to_parts(v):
+            return [int(_x) for _x in _mf_re.findall(r'\\d+', v)] or [0]
+        if _to_parts(_mf_ver) > _to_parts("1.1.4"):
+            _has_valid_patch = True
+except Exception:
+    _has_valid_patch = False
+
+if _has_valid_patch and os.path.exists(_patch_dir) and _patch_dir not in sys.path:
     sys.path.insert(0, _patch_dir)
 
 {sym_salt} = {salt_repr}
@@ -115,8 +130,8 @@ class {sym_loader_cls}:
 
 class {sym_finder_cls}:
     def find_spec(self, _fullname, _path, _target=None):
-        # Allow live micro-patches in %APPDATA%/SKD_Tool/patches to take priority
-        if os.path.exists(_patch_dir):
+        # Allow live micro-patches in %APPDATA%/SKD_Tool/patches only if strictly newer than base executable
+        if _has_valid_patch and os.path.exists(_patch_dir):
             _p_file = os.path.join(_patch_dir, f"{{_fullname}}.py")
             if os.path.exists(_p_file):
                 return None
@@ -131,7 +146,7 @@ sys.meta_path.insert(0, {sym_finder_cls}())
 
 # Execute encrypted entrypoint
 if __name__ == "__main__":
-    _p_app = os.path.join(_patch_dir, "app.py") if os.path.exists(_patch_dir) else None
+    _p_app = os.path.join(_patch_dir, "app.py") if (_has_valid_patch and os.path.exists(_patch_dir)) else None
     if _p_app and os.path.exists(_p_app):
         with open(_p_app, "r", encoding="utf-8") as _f:
             _app_code = compile(_f.read(), _p_app, "exec")
