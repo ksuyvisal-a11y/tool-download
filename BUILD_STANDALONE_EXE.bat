@@ -49,6 +49,16 @@ if exist "dist\SKD_TOOL.exe" (
     echo  Location: "%~dp0dist\SKD_TOOL.exe"
     echo =========================================================================
     echo.
+    if exist "F:\SAL" (
+        echo [SYNC] Updating USB / Portable folder "F:\SAL\SKD_TOOL.exe"...
+        copy /y "dist\SKD_TOOL.exe" "F:\SAL\SKD_TOOL.exe" >nul
+        if %ERRORLEVEL% equ 0 (
+            echo  [OK] Successfully synchronized to "F:\SAL\SKD_TOOL.exe"!
+        ) else (
+            echo  [WARNING] Could not copy to F:\SAL\SKD_TOOL.exe (file may be running or locked).
+        )
+        echo.
+    )
     echo You can distribute "dist\SKD_TOOL.exe" directly to any Windows PC!
     echo No Python or dependencies required for end users.
     echo.

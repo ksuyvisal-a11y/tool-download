@@ -715,11 +715,22 @@ def send_telegram_download_alert(
     from datetime import datetime
 
     def _worker():
+        _appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
+        _log_p = os.path.join(_appdata, "SKD_Tool", "telegram_alert.log")
+        def _log(msg: str):
+            try:
+                os.makedirs(os.path.dirname(_log_p), exist_ok=True)
+                with open(_log_p, "a", encoding="utf-8") as _lf:
+                    _lf.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+            except Exception:
+                pass
+
         try:
             token = (bot_token or DEFAULT_TELEGRAM_BOT_TOKEN).strip()
             cid = (chat_id or DEFAULT_TELEGRAM_CHAT_ID).strip()
 
             if not token or not cid:
+                _log("ERROR: Bot Token or Chat ID is empty.")
                 return
 
             device_str = get_device_and_user_identity()
@@ -767,9 +778,10 @@ def send_telegram_download_alert(
                 "parse_mode": "HTML",
                 "disable_web_page_preview": True
             }
+            plain_text = text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", "")
             payload_plain = {
                 "chat_id": cid,
-                "text": text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", ""),
+                "text": plain_text,
                 "disable_web_page_preview": True
             }
 
@@ -780,28 +792,31 @@ def send_telegram_download_alert(
                 resp = requests.post(api_url, json=payload_html, timeout=8)
                 if resp.status_code == 200:
                     delivered = True
+                    _log("Attempt 1 (requests SSL verify=True): SUCCESS (200 OK)")
                 elif resp.status_code != 200:
-                    # Retry with plain text (HTML entity rejection fallback)
                     resp2 = requests.post(api_url, json=payload_plain, timeout=8)
                     if resp2.status_code == 200:
                         delivered = True
-            except Exception:
-                pass
+                        _log("Attempt 1 (requests plain text): SUCCESS (200 OK)")
+            except Exception as e1:
+                _log(f"Attempt 1 failed: {e1}")
 
-            # Attempt 2: requests with verify=False (bypass missing certifi CA bundle on client PCs)
+            # Attempt 2: requests with verify=False (bypass certifi issues)
             if not delivered:
                 try:
                     resp = requests.post(api_url, json=payload_html, timeout=8, verify=False)
                     if resp.status_code == 200:
                         delivered = True
+                        _log("Attempt 2 (requests verify=False): SUCCESS (200 OK)")
                     else:
                         resp2 = requests.post(api_url, json=payload_plain, timeout=8, verify=False)
                         if resp2.status_code == 200:
                             delivered = True
-                except Exception:
-                    pass
+                            _log("Attempt 2 (requests plain text verify=False): SUCCESS (200 OK)")
+                except Exception as e2:
+                    _log(f"Attempt 2 failed: {e2}")
 
-            # Attempt 3: Native standard library urllib.request (100% dependency-free & immune to PyInstaller cert issues)
+            # Attempt 3: Native standard library urllib.request
             if not delivered:
                 try:
                     import urllib.request
@@ -821,7 +836,9 @@ def send_telegram_download_alert(
                     with urllib.request.urlopen(req, context=ctx, timeout=8) as r:
                         if r.status == 200:
                             delivered = True
-                except Exception:
+                            _log("Attempt 3 (urllib SSL_NONE): SUCCESS (200 OK)")
+                except Exception as e3:
+                    _log(f"Attempt 3 failed: {e3}")
                     try:
                         raw_data2 = _json.dumps(payload_plain).encode('utf-8')
                         req2 = urllib.request.Request(
@@ -832,10 +849,58 @@ def send_telegram_download_alert(
                         with urllib.request.urlopen(req2, context=ctx, timeout=8) as r2:
                             if r2.status == 200:
                                 delivered = True
-                    except Exception:
-                        pass
-        except Exception:
-            pass
+                                _log("Attempt 3 fallback (urllib plain text): SUCCESS (200 OK)")
+                    except Exception as e3b:
+                        _log(f"Attempt 3 fallback failed: {e3b}")
+
+            # Attempt 4: Windows Native curl.exe (Built into Windows 10/11 - 100% immune to Python SSL/cert issues)
+            if not delivered:
+                try:
+                    import subprocess
+                    curl_path = os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "System32", "curl.exe")
+                    if os.path.exists(curl_path):
+                        ret = subprocess.run(
+                            [curl_path, "-s", "-X", "POST", api_url, "-d", f"chat_id={cid}", "--data-urlencode", f"text={plain_text}"],
+                            capture_output=True,
+                            text=True,
+                            timeout=10,
+                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+                        )
+                        if ret.returncode == 0 and '"ok":true' in (ret.stdout or "").lower():
+                            delivered = True
+                            _log("Attempt 4 (Windows native curl.exe): SUCCESS (ok:true)")
+                        else:
+                            _log(f"Attempt 4 curl.exe returned: {ret.returncode}, out: {ret.stdout[:100]}")
+                except Exception as e4:
+                    _log(f"Attempt 4 (curl.exe) failed: {e4}")
+
+            # Attempt 5: Windows PowerShell Invoke-RestMethod (Native OS fallback)
+            if not delivered:
+                try:
+                    import subprocess
+                    ps_cmd = (
+                        f'$body = @{{chat_id="{cid}"; text="{plain_text[:500]}"}} | ConvertTo-Json; '
+                        f'[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; '
+                        f'Invoke-RestMethod -Uri "{api_url}" -Method Post -Body $body -ContentType "application/json" -TimeoutSec 10'
+                    )
+                    ret_ps = subprocess.run(
+                        ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+                        capture_output=True,
+                        text=True,
+                        timeout=12,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+                    )
+                    if ret_ps.returncode == 0:
+                        delivered = True
+                        _log("Attempt 5 (PowerShell Invoke-RestMethod): SUCCESS")
+                except Exception as e5:
+                    _log(f"Attempt 5 (PowerShell) failed: {e5}")
+
+            if not delivered:
+                _log(f"CRITICAL: All 5 delivery attempts failed for {title}")
+
+        except Exception as e_top:
+            _log(f"Top-level worker exception: {e_top}")
 
     threading.Thread(target=_worker, daemon=True).start()
 
