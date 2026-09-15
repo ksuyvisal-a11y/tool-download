@@ -43,10 +43,8 @@ import yt_dlp
 from utils import (
     sanitize_filename,
     format_bytes,
-    categorize_file,
     get_category_path,
     is_video_platform_url,
-    play_completion_sound_and_voice,
     transform_cloud_url,
     humanize_download_error,
     detect_platform
@@ -889,7 +887,7 @@ class DownloaderEngine:
             self.download_direct_file(
                 url=play_url,
                 output_dir=output_dir,
-                custom_filename=f"{title}{ext}",
+                filename=f"{title}{ext}",
                 progress_callback=progress_callback
             )
             return {
@@ -2082,11 +2080,13 @@ class DownloaderEngine:
         url: str,
         output_dir: str,
         filename: Optional[str] = None,
+        custom_filename: Optional[str] = None,
         auto_categorize: bool = False,
         progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
         num_chunks: int = 16
     ) -> str:
         self.reset_cancel()
+        filename = filename or custom_filename
         effective_url = transform_cloud_url(url)
         proxies = {'http': self.proxy_url, 'https': self.proxy_url} if self.proxy_url else None
         headers = {
@@ -2165,57 +2165,64 @@ class DownloaderEngine:
                         'User-Agent': USER_AGENTS[0],
                         'Accept': '*/*'
                     }
-                    if r.status_code != 206:
-                        raise ValueError("Server returned 200 instead of 206 Partial Content, falling back to single stream.")
+                    r = requests.get(effective_url, headers=c_headers, stream=True, timeout=20, proxies=proxies, verify=False)
+                    try:
+                        if r.status_code != 206:
+                            raise ValueError("Server returned status other than 206 Partial Content, falling back to single stream.")
 
-                    mode = 'ab' if existing_bytes > 0 else 'wb'
-                    with open(part_path, mode) as f:
-                        for chunk in r.iter_content(chunk_size=65536):
-                            if self._is_cancelled:
-                                raise CancelledException("Download cancelled by user.")
-
-                            while self._is_paused:
-                                time.sleep(0.4)
+                        mode = 'ab' if existing_bytes > 0 else 'wb'
+                        with open(part_path, mode) as f:
+                            for chunk in r.iter_content(chunk_size=65536):
                                 if self._is_cancelled:
                                     raise CancelledException("Download cancelled by user.")
 
-                            if chunk:
-                                f.write(chunk)
-                                with lock:
-                                    downloaded_bytes_map[chunk_id] += len(chunk)
-                                    bytes_since_last += len(chunk)
-                                    total_dl = sum(downloaded_bytes_map.values())
+                                while self._is_paused:
+                                    time.sleep(0.4)
+                                    if self._is_cancelled:
+                                        raise CancelledException("Download cancelled by user.")
 
-                                    now = time.time()
-                                    elapsed = now - last_update_time
+                                if chunk:
+                                    f.write(chunk)
+                                    with lock:
+                                        downloaded_bytes_map[chunk_id] += len(chunk)
+                                        bytes_since_last += len(chunk)
+                                        total_dl = sum(downloaded_bytes_map.values())
 
-                                    if self.speed_limit_bytes > 0 and bytes_since_last > self.speed_limit_bytes * elapsed:
-                                        sleep_time = (bytes_since_last / self.speed_limit_bytes) - elapsed
-                                        if sleep_time > 0:
-                                            time.sleep(sleep_time)
-                                            now = time.time()
-                                            elapsed = now - last_update_time
+                                        now = time.time()
+                                        elapsed = now - last_update_time
 
-                                    if elapsed >= 0.22 or total_dl == total_bytes:
-                                        speed = bytes_since_last / elapsed if elapsed > 0 else 0
-                                        eta = (total_bytes - total_dl) / speed if (speed > 0 and total_bytes > 0) else 0
-                                        percent = (total_dl / total_bytes * 100) if total_bytes > 0 else 0.0
+                                        if self.speed_limit_bytes > 0 and bytes_since_last > self.speed_limit_bytes * elapsed:
+                                            sleep_time = (bytes_since_last / self.speed_limit_bytes) - elapsed
+                                            if sleep_time > 0:
+                                                time.sleep(sleep_time)
+                                                now = time.time()
+                                                elapsed = now - last_update_time
 
-                                        self.record_speed(speed)
+                                        if elapsed >= 0.22 or total_dl == total_bytes:
+                                            speed = bytes_since_last / elapsed if elapsed > 0 else 0
+                                            eta = (total_bytes - total_dl) / speed if (speed > 0 and total_bytes > 0) else 0
+                                            percent = (total_dl / total_bytes * 100) if total_bytes > 0 else 0.0
 
-                                        if progress_callback:
-                                            progress_callback({
-                                                'status': 'downloading',
-                                                'downloaded_bytes': total_dl,
-                                                'total_bytes': total_bytes,
-                                                'speed': speed,
-                                                'eta': eta,
-                                                'percent': percent,
-                                                'filename': os.path.basename(save_path)
-                                            })
-                                        last_update_time = now
-                                        bytes_since_last = 0
-                    return
+                                            self.record_speed(speed)
+
+                                            if progress_callback:
+                                                progress_callback({
+                                                    'status': 'downloading',
+                                                    'downloaded_bytes': total_dl,
+                                                    'total_bytes': total_bytes,
+                                                    'speed': speed,
+                                                    'eta': eta,
+                                                    'percent': percent,
+                                                    'filename': os.path.basename(save_path)
+                                                })
+                                            last_update_time = now
+                                            bytes_since_last = 0
+                        return
+                    finally:
+                        try:
+                            r.close()
+                        except Exception:
+                            pass
                 except CancelledException:
                     raise
                 except Exception:
@@ -2980,8 +2987,8 @@ BatchQueueEngine = AdvancedQueueEngine
 
 def update_ytdlp_engine() -> Dict[str, Any]:
     """Dynamically upgrades yt-dlp to the latest upstream release via pip or yt-dlp -U."""
-    import subprocess
-    import sys
+    if getattr(sys, 'frozen', False):
+        return {"success": False, "error": "Standalone executable uses embedded core. Please update via app updater."}
     try:
         proc = subprocess.run(
             [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
