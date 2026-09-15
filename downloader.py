@@ -1660,6 +1660,8 @@ class DownloaderEngine:
 
     def _build_ytdlp_base_opts(self, url: str = "") -> Dict[str, Any]:
         ffmpeg_dir = get_ffmpeg_location()
+        import shutil
+        node_bin = shutil.which("node")
         opts = {
             'quiet': True,
             'no_warnings': True,
@@ -1670,14 +1672,11 @@ class DownloaderEngine:
             'retries': 20,
             'fragment_retries': 25,
             'skip_unavailable_fragments': True,
-            'concurrent_fragment_downloads': 5,
+            'concurrent_fragment_downloads': 8,
             'socket_timeout': 30,
-            'buffersize': 8388608,
+            'buffersize': 16777216,
             'continuedl': True,
             'windowsfilenames': True,
-            'js_runtimes': {
-                'node': {}
-            },
             'format_sort': [
                 'res', 'fps',
                 'codec:av01', 'codec:vp9.2', 'codec:vp9', 'codec:h264',
@@ -1686,10 +1685,6 @@ class DownloaderEngine:
             'format_sort_force': True,
             'prefer_free_formats': False,
             'extractor_args': {
-                'youtube': {
-                    'player_client': ['ios', 'android', 'mweb', 'web_creator', 'web'],
-                    'player_skip': ['configs', 'webpage'],
-                },
                 'tiktok': {
                     'webpage_download': True
                 }
@@ -1701,6 +1696,8 @@ class DownloaderEngine:
                 'Sec-Fetch-Mode': 'navigate',
             }
         }
+        if node_bin:
+            opts['js_runtimes'] = {'node': {'path': node_bin}}
         if ffmpeg_dir:
             opts['ffmpeg_location'] = ffmpeg_dir
             opts['merge_output_format'] = 'mp4'
@@ -2979,3 +2976,22 @@ class AdvancedQueueEngine:
 
 # Backward compatibility alias
 BatchQueueEngine = AdvancedQueueEngine
+
+
+def update_ytdlp_engine() -> Dict[str, Any]:
+    """Dynamically upgrades yt-dlp to the latest upstream release via pip or yt-dlp -U."""
+    import subprocess
+    import sys
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        if proc.returncode == 0:
+            return {"success": True, "message": "yt-dlp engine updated to the latest upstream release successfully!"}
+        else:
+            return {"success": False, "error": proc.stderr or proc.stdout or "Upgrade process failed"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}

@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 import webview
 
-from downloader import DownloaderEngine, AdvancedQueueEngine, CancelledException
+from downloader import DownloaderEngine, AdvancedQueueEngine, CancelledException, update_ytdlp_engine
 from converter import media_converter
 from scheduler import (
     DownloadScheduler,
@@ -462,6 +462,10 @@ class DownloaderApi:
     def test_telegram_bot(self, bot_token: str, chat_id: str) -> Dict[str, Any]:
         """Test sending a ping message to the specified Telegram Bot."""
         return test_telegram_bot_connection(bot_token, chat_id)
+
+    def update_engine_core(self) -> Dict[str, Any]:
+        """Upgrade the underlying yt-dlp core engine to the latest upstream release."""
+        return update_ytdlp_engine()
 
 
     # =========================================================================
