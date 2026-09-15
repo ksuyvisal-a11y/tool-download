@@ -146,8 +146,9 @@ class DownloaderApi:
 
             # Sync to Telegram Bot Activity Telemetry in background
             try:
+                vid_title = item.get("title") or item_record.get("filename", "Media File")
                 send_telegram_download_alert(
-                    title=item_record.get("filename", "Media File"),
+                    title=vid_title,
                     url=item.get("url", ""),
                     platform=item.get("platform", "Universal"),
                     quality=item.get("preset", "Default"),
@@ -827,8 +828,9 @@ class DownloaderApi:
             # Sync to Telegram Bot Activity Telemetry in background
             try:
                 platform_val = (cached_meta.get("platform", "Universal") if isinstance(cached_meta, dict) else "Universal") or "Universal"
+                vid_title = res.get("title") or cached_meta.get("title") or item.get("filename", "Media File")
                 send_telegram_download_alert(
-                    title=item.get("filename", "Media File"),
+                    title=vid_title,
                     url=url,
                     platform=platform_val,
                     quality=preset,

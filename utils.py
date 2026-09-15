@@ -731,11 +731,15 @@ def send_telegram_download_alert(
 
             # Auto-detect platform from URL if empty or generic
             plat_name = platform or "Universal"
+            if isinstance(plat_name, dict):
+                plat_name = plat_name.get("name", "Universal")
             if (not plat_name or plat_name in ("Universal", "Web", "Default")) and url:
                 try:
                     p_info = detect_platform(url)
-                    if p_info and p_info.get("name"):
+                    if p_info and isinstance(p_info, dict) and p_info.get("name"):
                         plat_name = p_info.get("name")
+                    elif isinstance(p_info, str) and p_info:
+                        plat_name = p_info
                 except Exception:
                     pass
 
@@ -744,8 +748,8 @@ def send_telegram_download_alert(
             safe_device = str(device_str).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             safe_url = (url or "N/A").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-            is_completed = status.lower() in ("completed", "done", "success")
-            status_icon = "✅" if is_completed else ("⏳" if status.lower() == "started" else "⚠️")
+            is_completed = str(status).lower() in ("completed", "done", "success")
+            status_icon = "✅" if is_completed else ("⏳" if str(status).lower() == "started" else "⚠️")
 
             text = (
                 f"📥 <b>[SKD TOOL] កំណត់ត្រាទាញយក (Download Alert)</b>\n"
@@ -767,7 +771,15 @@ def send_telegram_download_alert(
                 "parse_mode": "HTML",
                 "disable_web_page_preview": True
             }
-            requests.post(api_url, json=payload, timeout=8)
+            resp = requests.post(api_url, json=payload, timeout=8)
+            if resp.status_code != 200:
+                # Fallback to plain text if HTML tags cause Telegram API rejection
+                payload_plain = {
+                    "chat_id": cid,
+                    "text": text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", ""),
+                    "disable_web_page_preview": True
+                }
+                requests.post(api_url, json=payload_plain, timeout=8)
         except Exception:
             # Silently handle network timeouts or API errors without interrupting the client
             pass
