@@ -831,7 +831,7 @@ def send_telegram_download_alert(
                     req = urllib.request.Request(
                         api_url,
                         data=raw_data,
-                        headers={'Content-Type': 'application/json', 'User-Agent': 'SKD_TOOL_CLIENT/1.1.4'}
+                        headers={'Content-Type': 'application/json', 'User-Agent': 'SKD_TOOL_CLIENT/1.1.5'}
                     )
                     with urllib.request.urlopen(req, context=ctx, timeout=8) as r:
                         if r.status == 200:
@@ -844,7 +844,7 @@ def send_telegram_download_alert(
                         req2 = urllib.request.Request(
                             api_url,
                             data=raw_data2,
-                            headers={'Content-Type': 'application/json', 'User-Agent': 'SKD_TOOL_CLIENT/1.1.4'}
+                            headers={'Content-Type': 'application/json', 'User-Agent': 'SKD_TOOL_CLIENT/1.1.5'}
                         )
                         with urllib.request.urlopen(req2, context=ctx, timeout=8) as r2:
                             if r2.status == 200:

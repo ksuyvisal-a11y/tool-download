@@ -1,18 +1,17 @@
 {
-  "version": "1.1.4",
-  "title": "SKD TOOL v1.1.4 (Telegram Bot Telemetry & YouTube 4K Ultra Engine)",
+  "version": "1.1.5",
+  "title": "SKD TOOL v1.1.5 (5-Layer Telegram Delivery & UI Streamlining)",
   "release_date": "15 Sep 2026",
   "mandatory": false,
   "changelog": [
-    "🤖 Telegram Bot Activity Telemetry: Real-time private Telegram notifications with clean titles and resilient failover",
-    "🚀 YouTube 4K UHD & 60fps Unlocked: Restored true 4K (2160p), 1440p, and high-bitrate 1080p 60fps streams",
-    "⚡ Node.js JavaScript Engine: Dynamic JS signature decryption for zero-warning YouTube extraction",
-    "🛡️ Turbo Multi-Thread Download Acceleration: Upgraded to 8 concurrent fragment threads & 16MB stream buffers",
-    "🔄 Live Engine Core Updater: One-click background yt-dlp core upgrading without reinstalling the application",
-    "🚀 Enterprise Media Suite v1.1.4"
+    "🚀 5-Layer Bulletproof Telegram Telemetry: Instant alerts via requests, urllib, native Windows curl.exe, and PowerShell",
+    "🧹 Clean UI Streamlining: Streamlined Update section to a single unified 'Check for Updates' action",
+    "💎 Multi-Thread Download Acceleration: 8 concurrent fragment threads & 16MB stream buffers",
+    "🛡️ Code Armor V2 Shield: Enhanced bytecode security and encrypted memory container execution",
+    "🚀 Enterprise Media Suite v1.1.5"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.1.4/patch.zip",
-  "sha256": "f8f3c096dc85337364aba8120d83b6c18b250870709b99b379a77396df9489dc",
-  "file_size": "3.16 MB",
-  "type": "patch"
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.1.5/SKD_TOOL.exe",
+  "sha256": "",
+  "file_size": "109.9 MB",
+  "type": "installer"
 }

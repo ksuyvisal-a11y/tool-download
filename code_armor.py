@@ -93,7 +93,7 @@ try:
         _mf_ver = _mf_data.get("version", "0.0.0").lstrip("v")
         def _to_parts(v):
             return [int(_x) for _x in _mf_re.findall(r'\\d+', v)] or [0]
-        if _to_parts(_mf_ver) > _to_parts("1.1.4"):
+        if _to_parts(_mf_ver) > _to_parts("1.1.5"):
             _has_valid_patch = True
 except Exception:
     _has_valid_patch = False
