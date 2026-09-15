@@ -2537,32 +2537,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCheckUpdateManual.addEventListener("click", () => checkAppUpdates(true));
   }
 
-  const btnUpdateEngineCore = document.getElementById("btnUpdateEngineCore");
-  if (btnUpdateEngineCore) {
-    btnUpdateEngineCore.addEventListener("click", async () => {
-      btnUpdateEngineCore.disabled = true;
-      btnUpdateEngineCore.innerHTML = `<i data-lucide="loader-2" class="spin"></i><span>Updating...</span>`;
-      if (window.lucide) lucide.createIcons();
-      showToast("⏳ Upgrading yt-dlp core engine...");
-      try {
-        if (window.pywebview && window.pywebview.api && window.pywebview.api.update_engine_core) {
-          const res = await window.pywebview.api.update_engine_core();
-          if (res && res.success) {
-            showToast("✓ Core Download Engine updated successfully!");
-          } else {
-            showToast("⚠️ " + (res.error || "Update completed"));
-          }
-        }
-      } catch (err) {
-        showToast("Engine update: " + err);
-      } finally {
-        btnUpdateEngineCore.disabled = false;
-        btnUpdateEngineCore.innerHTML = `<i data-lucide="refresh-cw"></i><span>Update Core Engine</span>`;
-        if (window.lucide) lucide.createIcons();
-      }
-    });
-  }
-
   if (btnTopBarUpdate) {
     btnTopBarUpdate.addEventListener("click", () => {
       if (currentUpdatePackage) {
