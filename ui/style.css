@@ -1156,6 +1156,7 @@ body {
 
 .transfer-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
@@ -1173,6 +1174,9 @@ body {
   font-size: 0.74rem;
   color: var(--text-muted);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Progress Bar */
@@ -1224,6 +1228,8 @@ body {
 .metric-size {
   margin-left: auto;
   color: var(--accent-emerald);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Transfer Controls */
@@ -1232,13 +1238,16 @@ body {
   flex-direction: column;
   gap: 6px;
   min-width: 104px;
+  flex-shrink: 0;
 }
 
 .transfer-controls-done {
+  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 6px;
   min-width: auto;
+  flex-shrink: 0;
 }
 
 .btn-control {
@@ -1254,6 +1263,8 @@ body {
   cursor: pointer;
   transition: var(--transition);
   border: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-control i { width: 12px; height: 12px; }
@@ -4350,4 +4361,31 @@ input:checked + .slider-round:before {
   width: 14px;
   height: 14px;
 }
+
+/* Responsive Transfer Card for compact/resized window */
+@media (max-width: 980px) {
+  .transfer-card {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+  .thumb-container {
+    width: 110px !important;
+    height: 70px !important;
+    min-width: 110px !important;
+  }
+  .transfer-controls-done {
+    width: 100% !important;
+    justify-content: flex-end !important;
+    margin-top: 4px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    flex-wrap: wrap !important;
+  }
+  .transfer-controls:not(.transfer-controls-done) {
+    width: 100% !important;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+  }
+}
+
 
