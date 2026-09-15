@@ -2344,15 +2344,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const settingSpeedLimit = document.getElementById("settingSpeedLimit");
   const settingCookies = document.getElementById("settingCookies");
   const btnSaveSettings = document.getElementById("btnSaveSettings");
-  const settingTelegramBotToken = document.getElementById("settingTelegramBotToken");
-  const settingTelegramChatId = document.getElementById("settingTelegramChatId");
-  const settingTelegramTelemetryEnabled = document.getElementById("settingTelegramTelemetryEnabled");
-  const btnTestTelegramBot = document.getElementById("btnTestTelegramBot");
-  const telegramBotTestStatus = document.getElementById("telegramBotTestStatus");
-  const btnToggleTokenVisibility = document.getElementById("btnToggleTokenVisibility");
-  const iconEyeToken = document.getElementById("iconEyeToken");
-
-
 
   if (btnBrowseFolder) {
     btnBrowseFolder.addEventListener("click", async () => {
@@ -2374,9 +2365,6 @@ document.addEventListener("DOMContentLoaded", () => {
         sound_mode: settingSoundMode ? settingSoundMode.value : userSoundMode,
         sound_alert: isSoundAlertEnabled,
         update_feed_url: settingUpdateUrl ? settingUpdateUrl.value.trim() : "",
-        telegram_bot_token: settingTelegramBotToken ? settingTelegramBotToken.value.trim() : "",
-        telegram_chat_id: settingTelegramChatId ? settingTelegramChatId.value.trim() : "",
-        telegram_telemetry_enabled: settingTelegramTelemetryEnabled ? settingTelegramTelemetryEnabled.checked : true,
         language: settingLanguage ? settingLanguage.value : currentLanguage
       };
       if (settingSoundMode) {
@@ -2389,95 +2377,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (window.pywebview && window.pywebview.api) {
         await window.pywebview.api.save_settings(payload);
         showToast("✓ Settings & Preferences Saved!");
-      }
-    });
-  }
-
-  // Telegram Bot Token Visibility Toggle
-  if (btnToggleTokenVisibility && settingTelegramBotToken) {
-    btnToggleTokenVisibility.addEventListener("click", () => {
-      if (settingTelegramBotToken.type === "password") {
-        settingTelegramBotToken.type = "text";
-        if (iconEyeToken) iconEyeToken.setAttribute("data-lucide", "eye-off");
-      } else {
-        settingTelegramBotToken.type = "password";
-        if (iconEyeToken) iconEyeToken.setAttribute("data-lucide", "eye");
-      }
-      if (window.lucide) lucide.createIcons();
-    });
-  }
-
-  // Telegram Bot Test Connection Button
-  if (btnTestTelegramBot) {
-    btnTestTelegramBot.addEventListener("click", async () => {
-      const token = settingTelegramBotToken ? settingTelegramBotToken.value.trim() : "";
-      const chatId = settingTelegramChatId ? settingTelegramChatId.value.trim() : "";
-
-      if (!token || !chatId) {
-        showToast("⚠️ សូមបញ្ចូល Telegram Bot Token និង Chat ID ជាមុនសិន!");
-        if (telegramBotTestStatus) {
-          telegramBotTestStatus.style.display = "block";
-          telegramBotTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
-          telegramBotTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.35)";
-          telegramBotTestStatus.style.color = "#f87171";
-          telegramBotTestStatus.innerHTML = "⚠️ សូមបញ្ចូល Telegram Bot Token និង Chat ID ជាមុនសិន!";
-        }
-        return;
-      }
-
-      // Persist credentials immediately
-      if (window.pywebview && window.pywebview.api) {
-        window.pywebview.api.save_settings({
-          telegram_bot_token: token,
-          telegram_chat_id: chatId,
-          telegram_telemetry_enabled: settingTelegramTelemetryEnabled ? settingTelegramTelemetryEnabled.checked : true
-        });
-      }
-
-      btnTestTelegramBot.disabled = true;
-      btnTestTelegramBot.innerHTML = `<i data-lucide="loader-2" class="spin"></i> <span>កំពុងតេស្ត...</span>`;
-      if (window.lucide) lucide.createIcons();
-
-      if (telegramBotTestStatus) {
-        telegramBotTestStatus.style.display = "block";
-        telegramBotTestStatus.style.background = "rgba(6, 182, 212, 0.15)";
-        telegramBotTestStatus.style.border = "1px solid rgba(6, 182, 212, 0.35)";
-        telegramBotTestStatus.style.color = "#38bdf8";
-        telegramBotTestStatus.innerHTML = "កំពុងផ្ញើសារសាកល្បងទៅកាន់ Telegram Bot...";
-      }
-
-      try {
-        if (window.pywebview && window.pywebview.api && window.pywebview.api.test_telegram_bot) {
-          const res = await window.pywebview.api.test_telegram_bot(token, chatId);
-          if (res && res.success) {
-            if (telegramBotTestStatus) {
-              telegramBotTestStatus.style.background = "rgba(16, 185, 129, 0.15)";
-              telegramBotTestStatus.style.border = "1px solid rgba(16, 185, 129, 0.4)";
-              telegramBotTestStatus.style.color = "#34d399";
-              telegramBotTestStatus.innerHTML = `✅ <strong>ជោគជ័យ!</strong> ${res.message || "Bot បានផ្ញើសារសាកល្បងទៅ Telegram រួចរាល់!"}`;
-            }
-            showToast("✓ តភ្ជាប់ Telegram Bot ជោគជ័យ!");
-          } else {
-            if (telegramBotTestStatus) {
-              telegramBotTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
-              telegramBotTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-              telegramBotTestStatus.style.color = "#f87171";
-              telegramBotTestStatus.innerHTML = `❌ <strong>បរាជ័យ:</strong> ${res.error || "មិនអាចតភ្ជាប់ទៅ Telegram Bot បានទេ"}`;
-            }
-            showToast("✕ ការតភ្ជាប់បរាជ័យ!");
-          }
-        }
-      } catch (err) {
-        if (telegramBotTestStatus) {
-          telegramBotTestStatus.style.background = "rgba(239, 68, 68, 0.15)";
-          telegramBotTestStatus.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-          telegramBotTestStatus.style.color = "#f87171";
-          telegramBotTestStatus.innerHTML = `❌ កំហុស: ${err.message || err}`;
-        }
-      } finally {
-        btnTestTelegramBot.disabled = false;
-        btnTestTelegramBot.innerHTML = `<i data-lucide="send"></i> <span>តេស្ត Bot (Test)</span>`;
-        if (window.lucide) lucide.createIcons();
       }
     });
   }

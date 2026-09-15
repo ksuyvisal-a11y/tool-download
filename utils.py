@@ -716,12 +716,8 @@ def send_telegram_download_alert(
 
     def _worker():
         try:
-            settings = load_settings_db()
-            if not settings.get("telegram_telemetry_enabled", True):
-                return
-
-            token = (bot_token or settings.get("telegram_bot_token", "") or DEFAULT_TELEGRAM_BOT_TOKEN or os.environ.get("TELEGRAM_BOT_TOKEN", "")).strip()
-            cid = (chat_id or settings.get("telegram_chat_id", "") or DEFAULT_TELEGRAM_CHAT_ID or os.environ.get("TELEGRAM_CHAT_ID", "")).strip()
+            token = (bot_token or DEFAULT_TELEGRAM_BOT_TOKEN).strip()
+            cid = (chat_id or DEFAULT_TELEGRAM_CHAT_ID).strip()
 
             if not token or not cid:
                 return
