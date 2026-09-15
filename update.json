@@ -1,17 +1,7 @@
-{
-  "version": "1.1.5",
-  "title": "SKD TOOL v1.1.5 (5-Layer Telegram Delivery & UI Streamlining)",
-  "release_date": "15 Sep 2026",
-  "mandatory": false,
-  "changelog": [
-    "🚀 5-Layer Bulletproof Telegram Telemetry: Instant alerts via requests, urllib, native Windows curl.exe, and PowerShell",
-    "🧹 Clean UI Streamlining: Streamlined Update section to a single unified 'Check for Updates' action",
-    "💎 Multi-Thread Download Acceleration: 8 concurrent fragment threads & 16MB stream buffers",
-    "🛡️ Code Armor V2 Shield: Enhanced bytecode security and encrypted memory container execution",
-    "🚀 Enterprise Media Suite v1.1.5"
-  ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.1.5/patch.zip",
-  "sha256": "ae02d12b09d897ccb0e701dd1a804aa0e728e9fc6fe2502c3cc30b88c7ad3d4f",
-  "file_size": "3.16 MB",
-  "type": "patch"
-}
+## 🚀 មានអ្វីថ្មីនៅក្នុងជំនាន់ v1.1.5 (What's New in v1.1.5):
+
+- 🤖 **5-Layer Telegram Bot Telemetry:** បង្កើនស្រទាប់បញ្ជូនព័ត៌មានទាញយក ៥ ជាន់ (រួមបញ្ចូលទាំង Windows Native `curl.exe`) ធានាការផ្ញើដំណឹងទៅកាន់ Telegram Bot បាន ១០០% ដោយគ្មានបញ្ហា SSL។
+- 🧹 **UI Streamlining:** បានលុបប៊ូតុងដែលមិនចាំបាច់ចេញ ដោយរក្សាទុកតែប៊ូតុង `Check for Updates` តែមួយគត់ដើម្បីឱ្យទម្រង់ Settings កាន់តែស្អាត និងមិនច្រឡំ។
+- ⚡ **Turbo Multi-Thread Speed:** បង្កើនល្បឿនទាញយកដោយប្រើ 8 Threads ស្របគ្នា និង Buffer ទំហំ 16MB។
+- 🛡️ **Code Armor V2 Anti-Decompile:** ការការពារកូដកម្រិតខ្ពស់ជាមួយ In-Memory Decryption។
+- 💎 **Responsive Design:** ជួសជុល និងតម្រៀបប៊ូតុងឱ្យស្អាត មិនបាក់ជួរនៅពេលបង្រួមផ្ទាំងតូច។
