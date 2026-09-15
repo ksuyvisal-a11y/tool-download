@@ -10,8 +10,8 @@
     "🛡️ Code Armor V2 Shield: Enhanced bytecode security and encrypted memory container execution",
     "🚀 Enterprise Media Suite v1.1.5"
   ],
-  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.1.5/SKD_TOOL.exe",
-  "sha256": "",
-  "file_size": "109.9 MB",
-  "type": "installer"
+  "download_url": "https://github.com/ksuyvisal-a11y/tool-download/releases/download/1.1.5/patch.zip",
+  "sha256": "ae02d12b09d897ccb0e701dd1a804aa0e728e9fc6fe2502c3cc30b88c7ad3d4f",
+  "file_size": "3.16 MB",
+  "type": "patch"
 }
