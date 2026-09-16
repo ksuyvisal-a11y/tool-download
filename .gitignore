@@ -9,6 +9,9 @@ license.key
 *.key
 admin_key_history.json
 generated_keys_log.txt
+.env
+*.env
+
 
 # 2. Python Build & Cache
 __pycache__/
