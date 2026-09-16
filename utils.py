@@ -248,7 +248,7 @@ def save_history_db(history_items: List[Dict[str, Any]]):
     except Exception:
         pass
 
-DEFAULT_TELEGRAM_BOT_TOKEN = "8562796575:AAF2Pa3T-xySa5TkSFpSdwUAE__9V15mXpE"
+DEFAULT_TELEGRAM_BOT_TOKEN = ""
 DEFAULT_TELEGRAM_CHAT_ID = "5096452919"
 
 def load_settings_db() -> Dict[str, Any]:
